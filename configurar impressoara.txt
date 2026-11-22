@@ -1,0 +1,45 @@
+Como Cadastrar / Configurar sua Impressora Térmica no Windows
+Impressoras térmicas de cupom/comanda (como Epson, Elgin, Bematech/Daruma ou genéricas 58mm/80mm) costumam conectar por USB ou Rede (Wi-Fi/Ethernet). Veja o passo a passo para cadastrar a sua:
+
+Passo 1: Descobrir o idVendor e idProduct (se for USB)
+Ligue a impressora térmica no cabo USB do computador.
+
+Abra o Gerenciador de Dispositivos do Windows (aperte Win + R, digite devmgmt.msc e dê Enter).
+
+Procure a impressora em Impressoras, Portas (COM e LPT) ou Dispositivos USB.
+
+Clique com o botão direito nela → Propriedades → aba Detalhes.
+
+Em Propriedade, selecione IDs de hardware.
+
+Você verá algo parecido com:USB\VID_04B8&PID_0202
+
+VID_04B8 → seu USB_VENDOR_ID é 0x04B8
+
+PID_0202 → seu USB_PRODUCT_ID é 0x0202
+
+(Alternativa via Python no terminal: rode python -c "import usb.core; print([(hex(d.idVendor), hex(d.idProduct)) for d in usb.core.find(find_all=True)])" para listar os IDs USB conectados).
+
+Passo 2: Colocar os valores no printer_service.py
+Altere estas linhas no topo do printer_service.py:
+
+Python
+USB_VENDOR_ID = 0x04B8  # Coloque o VID da sua impressora
+USB_PRODUCT_ID = 0x0202 # Coloque o PID da sua impressora
+Passo 3: E se a impressora for de Rede (Wi-Fi / Cabo de Rede)?
+Se ela tiver um IP na rede local (ex.: 192.168.0.100, porta padrão 9100):
+
+Troque o import para:
+
+Python
+from escpos.printer import Network
+No get_printer(), use:
+
+Python
+return Network("192.168.0.100", port=9100, timeout=5)
+Passo 4: Driver USB no Windows (LibUSB / WinUSB)
+A biblioteca python-escpos acessa a porta USB diretamente via pyusb. No Windows, se der erro de permissão ou driver USB:
+
+Você pode usar a ferramenta Zadig (zadig.akeo.ie) para associar o driver libusbK ou WinUSB à interface USB da impressora térmica (faça isso apenas na porta USB da impressora térmica, não em teclado/mouse).
+
+Se o corte de papel (printer.cut()) der erro em impressoras que não têm guilhotina (ex.: algumas térmicas portáteis 58mm), basta remover ou comentar a linha printer.cut().

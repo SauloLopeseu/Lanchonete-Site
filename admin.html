@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Comerciante - WhatsMenu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased h-full p-6">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Painel de Pedidos</h1>
+                <p class="text-xs text-slate-500 mt-1">Atualização automática em tempo real • Impressão automática ao confirmar • WhatsApp do cliente</p>
+                <p id="last-updated-text" class="text-xs font-medium text-slate-500 mt-1.5">
+                    <i class="fa-regular fa-clock text-slate-400 mr-1"></i> Última atualização: aguardando...
+                </p>
+            </div>
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <button type="button" id="btn-toggle-sound" onclick="toggleSoundAlert()" class="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3.5 py-2 rounded-full text-xs font-semibold transition-all">
+                    <i id="sound-icon" class="fa-solid fa-bell"></i>
+                    <span id="sound-label">Som ativo</span>
+                </button>
+                <button type="button" id="btn-refresh-now" onclick="fetchOrders(true)" class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-semibold shadow-sm transition-all active:scale-[0.98]">
+                    <i id="refresh-icon" class="fa-solid fa-rotate-right"></i>
+                    <span id="refresh-label">Atualizar agora</span>
+                </button>
+                <div class="flex items-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full border border-emerald-200 text-xs font-semibold">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> Sistema Ativo
+                </div>
+            </div>
+        </header>
+
+        <div id="orders-container" class="space-y-4">
+            <p class="text-center text-slate-400 py-12">Carregando pedidos...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin.startsWith('http')
+            ? window.location.origin
+            : 'http://127.0.0.1:8000';
+        const ORDERS_API_URL = `${API_BASE_URL}/api/orders`;
+
+        let cachedOrders = [];
+        let isFetchingOrders = false;
+        let hasLoadedInitialOrders = false;
+        let knownPendingIds = new Set();
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatWhatsappPhone(rawPhone) {
+            const digits = String(rawPhone || '').replace(/\D/g, '');
+            if (!digits) return '';
+            if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) {
+                return `55${digits}`;
+            }
+            return digits;
+        }
+
+        function ensureAudioContext() {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return null;
+            if (!audioCtx) {
+                audioCtx = new AudioContextClass();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            return audioCtx;
+        }
+
+        function playNewOrderAlert() {
+            if (!soundEnabled) return;
+            const ctx = ensureAudioContext();
+            if (!ctx) return;
+
+            const notes = [
+                { freq: 880, start: 0, duration: 0.14 },
+                { freq: 1174.66, start: 0.17, duration: 0.22 }
+            ];
+
+            notes.forEach(note => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(note.freq, ctx.currentTime + note.start);
+
+                gain.gain.setValueAtTime(0.0001, ctx.currentTime + note.start);
+                gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + note.start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + note.start + note.duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                osc.start(ctx.currentTime + note.start);
+                osc.stop(ctx.currentTime + note.start + note.duration + 0.02);
+            });
+        }
+
+        function updateSoundButtonUI() {
+            const btn = document.getElementById('btn-toggle-sound');
+            const icon = document.getElementById('sound-icon');
+            const label = document.getElementById('sound-label');
+            if (!btn || !icon || !label) return;
+
+            if (soundEnabled) {
+                btn.className = "inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3.5 py-2 rounded-full text-xs font-semibold transition-all";
+                icon.className = "fa-solid fa-bell";
+                label.innerText = "Som ativo";
+            } else {
+                btn.className = "inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200 px-3.5 py-2 rounded-full text-xs font-semibold transition-all";
+                icon.className = "fa-solid fa-bell-slash";
+                label.innerText = "Som mudo";
+            }
+        }
+
+        function toggleSoundAlert() {
+            soundEnabled = !soundEnabled;
+            updateSoundButtonUI();
+            if (soundEnabled) {
+                playNewOrderAlert();
+            }
+        }
+
+        function processPendingAlerts(orders) {
+            const currentPendingIds = new Set(
+                orders
+                    .filter(o => String(o.status || '').trim() === 'Pendente')
+                    .map(o => Number(o.id))
+            );
+
+            if (!hasLoadedInitialOrders) {
+                knownPendingIds = currentPendingIds;
+                hasLoadedInitialOrders = true;
+                return;
+            }
+
+            let hasBrandNewPending = false;
+            currentPendingIds.forEach(id => {
+                if (!knownPendingIds.has(id)) {
+                    hasBrandNewPending = true;
+                }
+            });
+
+            knownPendingIds = currentPendingIds;
+
+            if (hasBrandNewPending) {
+                playNewOrderAlert();
+            }
+        }
+
+        function updateLastUpdatedLabel(isError = false) {
+            const el = document.getElementById('last-updated-text');
+            if (!el) return;
+            const nowStr = new Date().toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            if (isError) {
+                el.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i> Última tentativa falhou às <span class="text-amber-700 font-semibold">${nowStr}</span>`;
+            } else {
+                el.innerHTML = `<i class="fa-regular fa-clock text-emerald-600 mr-1"></i> Última atualização: <span class="text-slate-700 font-semibold">${nowStr}</span>`;
+            }
+        }
+
+        async function fetchOrders(manual = false) {
+            if (isFetchingOrders) return;
+            isFetchingOrders = true;
+
+            const btn = document.getElementById('btn-refresh-now');
+            const icon = document.getElementById('refresh-icon');
+            const label = document.getElementById('refresh-label');
+
+            if (btn) btn.disabled = true;
+            if (icon) icon.classList.add('fa-spin');
+            if (manual && label) label.innerText = 'Atualizando...';
+
+            try {
+                const res = await fetch(ORDERS_API_URL);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const orders = await res.json();
+                cachedOrders = Array.isArray(orders) ? orders : [];
+                processPendingAlerts(cachedOrders);
+                renderOrders(cachedOrders);
+                updateLastUpdatedLabel(false);
+            } catch (err) {
+                console.error("Erro ao buscar pedidos:", err);
+                updateLastUpdatedLabel(true);
+                const container = document.getElementById('orders-container');
+                if (container && cachedOrders.length === 0) {
+                    container.innerHTML = `
+                        <div class="bg-amber-50 p-6 rounded-2xl text-center text-amber-800 border border-amber-200 text-sm space-y-2">
+                            <p class="font-bold">Não foi possível carregar os pedidos de <code>${escapeHtml(ORDERS_API_URL)}</code>.</p>
+                            <p class="text-xs">Motivo: ${escapeHtml(err.message || 'Falha de conexão')}. Verifique se o servidor FastAPI está rodando e abra este painel em <strong>http://127.0.0.1:8000/admin</strong>.</p>
+                        </div>
+                    `;
+                }
+            } finally {
+                isFetchingOrders = false;
+                if (btn) btn.disabled = false;
+                if (icon) icon.classList.remove('fa-spin');
+                if (label) label.innerText = 'Atualizar agora';
+            }
+        }
+
+        function renderOrders(orders) {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = '';
+
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `<div class="bg-white p-12 rounded-2xl text-center text-slate-400 border border-slate-200">Nenhum pedido recebido ainda.</div>`;
+                return;
+            }
+
+            orders.forEach(order => {
+                let statusBg = "bg-amber-50 text-amber-700 border-amber-200";
+                if (order.status === 'Confirmado') statusBg = "bg-teal-50 text-teal-700 border-teal-200";
+                if (order.status === 'Preparando') statusBg = "bg-blue-50 text-blue-700 border-blue-200";
+                if (order.status === 'Saiu para entrega' || order.status === 'Pronto') statusBg = "bg-purple-50 text-purple-700 border-purple-200";
+                if (order.status === 'Concluído' || order.status === 'Entregue' || order.status === 'Impresso') statusBg = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                if (order.status === 'Cancelado' || order.status === 'Recusado') statusBg = "bg-red-50 text-red-700 border-red-200";
+
+                const orderId = Number(order.id);
+                const totalFormatted = (Number(order.total) || 0).toFixed(2).replace('.', ',');
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4";
+                card.innerHTML = `
+                    <div class="space-y-1 flex-grow">
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <span class="font-bold text-base text-slate-900">#${escapeHtml(order.id)} - ${escapeHtml(order.client_name)}</span>
+                            <span class="px-3 py-1 border rounded-full text-xs font-bold ${statusBg}">${escapeHtml(order.status)}</span>
+                            ${order.printed ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200"><i class="fa-solid fa-print mr-1"></i>Impresso</span>` : ''}
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            <i class="fa-solid fa-phone text-emerald-600"></i> ${escapeHtml(order.client_phone)} •
+                            <i class="fa-solid fa-motorcycle text-rose-500"></i> ${escapeHtml(order.delivery_type)} ${order.address ? '• ' + escapeHtml(order.address) : ''}
+                        </p>
+                        <p class="text-xs font-medium text-slate-700"><i class="fa-solid fa-wallet text-slate-400"></i> Pagamento: ${escapeHtml(order.payment)}</p>
+                        <div class="text-sm text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2 whitespace-pre-line">${escapeHtml(order.items)}</div>
+                        <p class="text-sm font-extrabold text-rose-600 pt-1">Total: R$ ${totalFormatted}</p>
+                    </div>
+                    <div class="flex flex-col gap-2 w-full md:w-auto min-w-[245px]">
+                        <button type="button" onclick="updateStatus(${orderId}, 'Confirmado')" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                            <i class="fa-solid fa-circle-check"></i> Confirmar e Imprimir
+                        </button>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <button type="button" onclick="updateStatus(${orderId}, 'Preparando')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-1.5 px-2.5 rounded-lg text-xs border border-blue-200 transition-all">
+                                <i class="fa-solid fa-fire-burner mr-1"></i> Preparando
+                            </button>
+                            <button type="button" onclick="updateStatus(${orderId}, 'Saiu para entrega')" class="bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold py-1.5 px-2.5 rounded-lg text-xs border border-purple-200 transition-all">
+                                <i class="fa-solid fa-motorcycle mr-1"></i> Saiu p/ entrega
+                            </button>
+                            <button type="button" onclick="updateStatus(${orderId}, 'Concluído')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold py-1.5 px-2.5 rounded-lg text-xs border border-emerald-200 transition-all">
+                                <i class="fa-solid fa-check mr-1"></i> Concluir
+                            </button>
+                            <button type="button" onclick="updateStatus(${orderId}, 'Cancelado')" class="bg-red-50 hover:bg-red-100 text-red-700 font-semibold py-1.5 px-2.5 rounded-lg text-xs border border-red-200 transition-all">
+                                <i class="fa-solid fa-xmark mr-1"></i> Cancelar
+                            </button>
+                        </div>
+                        <button type="button" onclick="printOrder(${orderId})" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all">
+                            <i class="fa-solid fa-print"></i> Imprimir Comanda
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function buildCustomerMessage(order, newStatus, reason) {
+            const clientName = order.client_name || 'Cliente';
+            const id = order.id;
+
+            switch (newStatus) {
+                case 'Confirmado':
+                    return `Olá, *${clientName}*! ✅ Seu pedido *#${id}* foi *CONFIRMADO* e já seguiu para a cozinha!`;
+                case 'Preparando':
+                    return `Olá, *${clientName}*! 🍔🔥 Seu pedido *#${id}* já está sendo *PREPARADO* com todo carinho!`;
+                case 'Saiu para entrega':
+                    return order.delivery_type === 'Retirada'
+                        ? `Olá, *${clientName}*! 🛍️ Seu pedido *#${id}* está *PRONTO PARA RETIRADA* no balcão!`
+                        : `Olá, *${clientName}*! 🛵💨 Seu pedido *#${id}* *SAIU PARA ENTREGA* e está a caminho!`;
+                case 'Concluído':
+                    return `Olá, *${clientName}*! ⭐ Seu pedido *#${id}* foi *CONCLUÍDO*. Obrigado pela preferência!`;
+                case 'Cancelado': {
+                    let msg = `Olá, *${clientName}*! ❌ Infelizmente seu pedido *#${id}* foi *CANCELADO*.`;
+                    if (reason) msg += `\n*Motivo:* ${reason}`;
+                    msg += `\nSe precisar de ajuda, fale conosco por aqui.`;
+                    return msg;
+                }
+                default:
+                    return `Olá, *${clientName}*! Seu pedido *#${id}* foi atualizado para: *${newStatus}*.`;
+            }
+        }
+
+        async function updateStatus(id, newStatus) {
+            const order = cachedOrders.find(o => Number(o.id) === Number(id));
+            if (!order) return;
+
+            let reason = '';
+            if (newStatus === 'Cancelado') {
+                const inputReason = prompt(`Motivo do cancelamento do pedido #${id} (opcional, será enviado ao cliente):`, 'Sem estoque no momento');
+                if (inputReason === null) return;
+                reason = inputReason.trim();
+            }
+
+            try {
+                const res = await fetch(`${ORDERS_API_URL}/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, reason: reason || undefined })
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Falha ao atualizar status (HTTP ${res.status})`);
+                }
+
+                if (newStatus === 'Confirmado') {
+                    try {
+                        await fetch(`${ORDERS_API_URL}/${id}/print`, { method: 'POST' });
+                    } catch (printErr) {
+                        console.warn("Aviso ao enviar para impressora:", printErr);
+                    }
+                }
+
+                const formattedPhone = formatWhatsappPhone(order.client_phone);
+                const message = buildCustomerMessage(order, newStatus, reason);
+
+                if (formattedPhone) {
+                    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+                } else {
+                    alert(`Status atualizado para "${newStatus}", mas o telefone do pedido #${id} não é válido para WhatsApp.`);
+                }
+
+                await fetchOrders();
+            } catch (err) {
+                console.error("Erro ao atualizar status:", err);
+                alert(`Não foi possível atualizar o pedido #${id}: ${err.message}`);
+            }
+        }
+
+        async function printOrder(id) {
+            try {
+                const res = await fetch(`${ORDERS_API_URL}/${id}/print`, { method: 'POST' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                await fetchOrders();
+                alert(`Comanda do pedido #${id} enviada para a impressora térmica!`);
+            } catch (err) {
+                console.error("Erro ao imprimir comanda:", err);
+                alert(`Falha ao enviar comanda do pedido #${id} para a impressora.`);
+            }
+        }
+
+        document.addEventListener('pointerdown', ensureAudioContext, { once: true });
+        setInterval(() => fetchOrders(false), 5000);
+        window.onload = () => {
+            updateSoundButtonUI();
+            fetchOrders(false);
+        };
+    </script>
+</body>
+</html>

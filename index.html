@@ -1,0 +1,3471 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Lanchonete - Cardápio Digital & Painel</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased h-full flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header / Banner da Lanchonete -->
+    <header class="bg-slate-900 text-white relative shadow-md">
+        <div class="absolute inset-0 opacity-25 bg-cover bg-center" style="background-image: url('https://placehold.co/1200x400/1e293b/ffffff?text=Lanchonete');"></div>
+        
+        <div class="relative max-w-3xl mx-auto px-4 py-6 flex flex-col items-center text-center">
+            <div class="w-20 h-20 rounded-full border-4 border-white/20 shadow-lg overflow-hidden bg-white mb-3">
+                <img src="https://placehold.co/160x160/f43f5e/ffffff?text=S%26A" alt="Lanchonete Sabor & Arte" class="w-full h-full object-cover">
+            </div>
+            
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Sua Lanchonete</h1>
+            <p class="text-slate-300 text-sm mt-1 max-w-md">Os melhores lanches, porções e bebidas da cidade! Faça seu pedido online.</p>
+            
+            <div class="flex flex-wrap items-center justify-center gap-3 mt-4 text-xs sm:text-sm">
+                <div id="store-status" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Aberto agora (18:00 às 23:00)
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    <i class="fa-regular fa-clock text-brand-500"></i> Entrega: 30-45 min
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                    <i class="fa-solid fa-motorcycle text-brand-500"></i> <span id="header-min-fee">Carregando taxas...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Faixa de Aviso quando o Restaurante estiver Fechado -->
+    <div id="closed-banner" class="hidden bg-red-600 text-white text-center py-2.5 px-4 text-xs sm:text-sm font-semibold shadow-sm">
+        <i class="fa-solid fa-door-closed mr-1.5"></i>
+        <span id="closed-banner-text">No momento estamos fechados. Horário de atendimento: 18:00 às 23:00.</span>
+    </div>
+
+    <!-- Barra de Navegação de Categorias -->
+    <nav class="sticky top-0 z-20 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-200">
+        <div class="max-w-3xl mx-auto px-4 overflow-x-auto no-scrollbar py-2">
+            <div class="flex gap-2 min-w-max" id="category-tabs">
+                <button onclick="filterCategory('lanches')" class="cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-brand-500 text-white shadow-sm shadow-brand-500/30" data-category="lanches">
+                    Lanches
+                </button>
+                <button onclick="filterCategory('acompanhamentos')" class="cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="acompanhamentos">
+                    Acompanhamentos
+                </button>
+                <button onclick="filterCategory('bebidas')" class="cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="bebidas">
+                    Bebidas
+                </button>
+                <button onclick="filterCategory('sobremesas')" class="cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200" data-category="sobremesas">
+                    Sobremesas
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Botão de Conta / Histórico do Cliente -->
+    <div class="max-w-3xl mx-auto px-4 mt-4 flex justify-end w-full">
+        <button type="button" onclick="openCustomerModal()" id="customer-account-btn"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:border-brand-500 hover:text-brand-600 text-xs sm:text-sm font-semibold shadow-sm transition-all">
+            <i class="fa-solid fa-user text-brand-500"></i>
+            <span id="customer-account-label">Entrar / Meus Pedidos</span>
+        </button>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-3xl mx-auto px-4 py-4 flex-grow w-full mb-20">
+        <div id="api-notice" class="hidden mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center justify-between gap-2">
+            <span><i class="fa-solid fa-triangle-exclamation mr-1.5"></i> API em <code id="api-notice-url">127.0.0.1:8000</code> não respondeu. Exibindo dados locais de contingência.</span>
+            <button onclick="loadBackendData()" class="font-bold underline shrink-0">Tentar novamente</button>
+        </div>
+
+        <div class="mb-6 relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input type="text" id="search-input" oninput="searchProducts(this.value)" placeholder="Pesquisar lanches, bebidas, porções..." class="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 shadow-sm transition-all">
+        </div>
+
+        <div id="products-container" class="space-y-4"></div>
+
+        <div id="no-results" class="hidden text-center py-12">
+            <i class="fa-solid fa-utensils text-4xl text-slate-300 mb-3"></i>
+            <p class="text-slate-500 font-medium">Nenhum produto encontrado.</p>
+        </div>
+    </main>
+
+    <!-- Rodapé com Botão de Acesso Administrativo -->
+    <footer class="bg-slate-900 text-slate-400 py-6 text-center text-xs">
+        <p class="font-medium text-slate-300">Sua Lanchonete © 2026</p>
+        <p class="mt-1">Desenvolvido com padrão WhatsMenu API</p>
+        <div class="mt-4 pt-3 border-t border-slate-800 max-w-xs mx-auto">
+            <button onclick="openAdminAccess()" class="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-800">
+                <i class="fa-solid fa-lock text-[11px] text-brand-500"></i>
+                <span id="admin-footer-label">Área do Restaurante</span>
+            </button>
+        </div>
+    </footer>
+
+    <!-- Botão de Carrinho Flutuante -->
+    <div id="floating-cart" class="fixed bottom-4 left-0 right-0 z-30 px-4 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
+        <div class="max-w-3xl mx-auto">
+            <button onclick="openCartModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700 transition-all active:scale-[0.98]">
+                <div class="flex items-center gap-3">
+                    <span id="cart-badge" class="bg-brand-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-md">0</span>
+                    <span class="font-semibold text-sm">Ver Carrinho</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="cart-total-footer" class="font-bold text-brand-400 text-base">R$ 0,00</span>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-400"></i>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CADASTRO, LOGIN, ENDEREÇOS, RECUPERAÇÃO E HISTÓRICO DO CLIENTE -->
+    <div id="customer-modal" class="fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center">
+                        <i class="fa-solid fa-user-check text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 id="customer-modal-title" class="font-bold text-base">Área do Cliente</h2>
+                        <p id="customer-modal-subtitle" class="text-xs text-slate-400">Acesse sua conta, endereços e compras</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeCustomerModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-grow space-y-5">
+                <!-- Visão 1: Login, Cadastro ou Recuperação de Senha em 3 Etapas via WhatsApp -->
+                <div id="customer-auth-box" class="space-y-4">
+                    <div id="customer-auth-tabs" class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button type="button" id="tab-cust-login" onclick="switchCustomerAuthTab('login')"
+                            class="py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition-all">
+                            Já tenho cadastro
+                        </button>
+                        <button type="button" id="tab-cust-register" onclick="switchCustomerAuthTab('register')"
+                            class="py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all">
+                            Criar cadastro
+                        </button>
+                    </div>
+
+                    <!-- Form Login -->
+                    <form id="customer-login-form" onsubmit="handleCustomerLogin(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp / Celular *</label>
+                            <input type="tel" id="cust-login-phone" required placeholder="Ex: 19999999999"
+                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Senha *</label>
+                            <input type="password" id="cust-login-pass" required minlength="4" placeholder="Sua senha"
+                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        </div>
+                        <p id="cust-auth-error" class="hidden text-xs text-red-600 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100"></p>
+                        <p id="cust-reset-success" class="hidden text-xs text-emerald-700 font-medium bg-emerald-50 p-2.5 rounded-lg border border-emerald-200"></p>
+                        <button type="submit" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                            Entrar na Conta
+                        </button>
+                        <div class="text-center pt-1">
+                            <button type="button" onclick="openCustomerForgotView()" class="text-xs font-semibold text-slate-500 hover:text-brand-600 underline transition-colors">
+                                Esqueci minha senha
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Form Recuperação de Senha do Cliente em 3 Etapas -->
+                    <div id="customer-forgot-box" class="hidden space-y-3">
+                        <form id="customer-send-code-form" onsubmit="handleCustomerSendResetCode(event)" class="space-y-3">
+                            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
+                                <i class="fa-brands fa-whatsapp mr-1 font-bold"></i> <strong>Etapa 1 de 3:</strong> Digite o número de WhatsApp cadastrado para enviar o código de recuperação.
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp Cadastrado *</label>
+                                <input type="tel" id="cust-forgot-phone" required placeholder="Ex: 19999999999"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <button type="submit" id="btn-cust-send-code" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                                Enviar Código pelo WhatsApp
+                            </button>
+                        </form>
+
+                        <form id="customer-verify-code-form" onsubmit="handleCustomerVerifyResetCode(event)" class="hidden space-y-3 pt-2 border-t border-slate-100">
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">
+                                <strong>Etapa 2 de 3:</strong> Digite o código enviado para <span id="cust-reset-phone-display" class="font-bold"></span>.
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Código de Confirmação *</label>
+                                <input type="text" id="cust-reset-code" required maxlength="6" placeholder="Ex: 123456"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="btn-cust-reopen-wa" onclick="reopenCustomerWhatsappCode()"
+                                    class="px-3 py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold rounded-xl text-xs transition-all shrink-0">
+                                    <i class="fa-brands fa-whatsapp mr-1"></i> Reabrir WhatsApp
+                                </button>
+                                <button type="submit" id="btn-cust-verify-code" class="flex-grow bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                                    Confirmar Código
+                                </button>
+                            </div>
+                        </form>
+
+                        <form id="customer-confirm-reset-form" onsubmit="handleCustomerConfirmReset(event)" class="hidden space-y-3 pt-2 border-t border-slate-100">
+                            <div class="p-3 bg-brand-50 border border-brand-200 rounded-xl text-xs text-brand-800">
+                                <strong>Etapa 3 de 3:</strong> Código confirmado para <span id="cust-reset-confirmed-phone" class="font-bold"></span>. Digite e confirme sua nova senha.
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nova Senha *</label>
+                                <input type="password" id="cust-reset-new-pass" required minlength="4" placeholder="Mínimo 4 caracteres"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Confirmar Nova Senha *</label>
+                                <input type="password" id="cust-reset-confirm-pass" required minlength="4" placeholder="Digite novamente a nova senha"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <button type="submit" id="btn-cust-confirm-reset" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                                Alterar Senha
+                            </button>
+                        </form>
+
+                        <p id="cust-forgot-feedback" class="hidden text-xs font-medium p-2.5 rounded-lg border"></p>
+
+                        <div class="text-center pt-1">
+                            <button type="button" onclick="switchCustomerAuthTab('login')" class="text-xs font-semibold text-slate-500 hover:text-slate-800 underline transition-colors">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Voltar para o login
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Cadastro Completo -->
+                    <form id="customer-register-form" onsubmit="handleCustomerRegister(event)" class="hidden space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Seu Nome *</label>
+                            <input type="text" id="cust-reg-name" required placeholder="Ex: Ana Paula"
+                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp / Celular *</label>
+                                <input type="tel" id="cust-reg-phone" required placeholder="Ex: 19999999999"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Crie uma Senha *</label>
+                                <input type="password" id="cust-reg-pass" required minlength="4" placeholder="Mín. 4 caracteres"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Endereço Principal (Você poderá adicionar outros depois)</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Identificação do Endereço</label>
+                                    <select id="cust-reg-label" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                        <option value="Casa">Casa</option>
+                                        <option value="Trabalho">Trabalho</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Bairro *</label>
+                                    <select id="cust-reg-neighborhood" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50"></select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="col-span-2">
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Rua *</label>
+                                <input type="text" id="cust-reg-street" required placeholder="Ex: Rua das Flores"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Número *</label>
+                                <input type="text" id="cust-reg-number" required placeholder="123"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Complemento <span class="text-slate-400">(opcional)</span></label>
+                                <input type="text" id="cust-reg-complement" placeholder="Ex: Apto 12, Bloco B"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Ponto de Referência <span class="text-slate-400">(opcional)</span></label>
+                                <input type="text" id="cust-reg-reference" placeholder="Ex: Próximo à padaria central"
+                                    class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+                        <p id="cust-reg-error" class="hidden text-xs text-red-600 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100"></p>
+                        <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                            Cadastrar e Entrar
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Visão 2: Perfil Logado + Gerenciador de Endereços + Histórico de Compras -->
+                <div id="customer-history-box" class="hidden space-y-4">
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs text-slate-400 font-semibold uppercase">Cliente conectado</p>
+                            <h3 id="cust-profile-name" class="font-bold text-slate-900 text-base"></h3>
+                            <p id="cust-profile-phone" class="text-xs text-slate-500"></p>
+                        </div>
+                        <button type="button" onclick="logoutCustomer()"
+                            class="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold transition-colors">
+                            Sair
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button type="button" id="tab-logged-addresses" onclick="switchLoggedCustomerSubtab('addresses')"
+                            class="py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition-all">
+                            <i class="fa-solid fa-location-dot mr-1 text-brand-500"></i> Meus Endereços
+                        </button>
+                        <button type="button" id="tab-logged-orders" onclick="switchLoggedCustomerSubtab('orders')"
+                            class="py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all">
+                            <i class="fa-solid fa-receipt mr-1 text-brand-500"></i> Minhas Compras
+                        </button>
+                    </div>
+
+                    <div id="customer-addresses-panel" class="space-y-4">
+                        <div id="customer-saved-addresses-list" class="space-y-2.5"></div>
+
+                        <form id="customer-address-form" onsubmit="saveCustomerAddressForm(event)" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h4 id="cust-addr-form-title" class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                                    <i class="fa-solid fa-plus-circle text-brand-500 mr-1"></i> Adicionar Novo Endereço
+                                </h4>
+                                <button type="button" id="btn-cancel-edit-addr" onclick="resetCustomerAddressForm()" class="hidden text-xs font-semibold text-slate-500 hover:text-slate-800 underline">
+                                    Cancelar edição
+                                </button>
+                            </div>
+
+                            <input type="hidden" id="cust-addr-edit-id" value="">
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Local (Ex: Casa, Trabalho) *</label>
+                                    <input type="text" id="cust-addr-label" required placeholder="Ex: Casa, Trabalho, Mãe"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Bairro *</label>
+                                    <select id="cust-addr-neighborhood" required class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50"></select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Rua *</label>
+                                    <input type="text" id="cust-addr-street" required placeholder="Ex: Rua das Flores"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Número *</label>
+                                    <input type="text" id="cust-addr-number" required placeholder="123"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Complemento <span class="text-slate-400">(opcional)</span></label>
+                                    <input type="text" id="cust-addr-complement" placeholder="Ex: Apto 12, Bloco B"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ponto de Referência <span class="text-slate-400">(opcional)</span></label>
+                                    <input type="text" id="cust-addr-reference" placeholder="Ex: Próximo à padaria"
+                                        class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                </div>
+                            </div>
+
+                            <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+                                <input type="checkbox" id="cust-addr-default" checked class="rounded text-brand-600 focus:ring-brand-500">
+                                Usar como endereço padrão no carrinho
+                            </label>
+
+                            <button type="submit" id="btn-save-cust-addr" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 rounded-xl text-xs sm:text-sm shadow-sm transition-all">
+                                Salvar Endereço
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="customer-orders-panel" class="hidden">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Histórico de Compras</h3>
+                        <div id="customer-orders-list" class="space-y-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE PERSONALIZAÇÃO DO PRODUTO -->
+    <div id="custom-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="relative h-48 bg-slate-100 flex-shrink-0">
+                <img id="modal-img" src="" alt="" class="w-full h-full object-cover">
+                <button onclick="closeModal()" class="absolute top-4 right-4 w-9 h-9 bg-slate-900/60 hover:bg-slate-900 text-white rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
+                <div>
+                    <h2 id="modal-title" class="text-xl font-bold text-slate-900">Nome do Lanche</h2>
+                    <p id="modal-desc" class="text-slate-500 text-sm mt-1">Descrição detalhada...</p>
+                    <p id="modal-price" class="text-brand-600 font-extrabold text-lg mt-2">R$ 0,00</p>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4" id="options-section">
+                    <h3 class="font-bold text-sm text-slate-800 mb-1">Escolha os Adicionais (Opcional)</h3>
+                    <div id="addons-list" class="space-y-2"></div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <h3 class="font-bold text-sm text-slate-800 mb-2">Alguma observação?</h3>
+                    <textarea id="modal-obs" placeholder="Ex: Sem cebola, ponto da carne bem passado..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 resize-none h-20"></textarea>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center gap-4 flex-shrink-0">
+                <div class="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <button onclick="adjustModalQty(-1)" class="px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 transition-colors"><i class="fa-solid fa-minus text-xs"></i></button>
+                    <span id="modal-qty" class="w-8 text-center font-bold text-sm">1</span>
+                    <button onclick="adjustModalQty(1)" class="px-3.5 py-2.5 text-slate-600 hover:bg-slate-100 transition-colors"><i class="fa-solid fa-plus text-xs"></i></button>
+                </div>
+                <button onclick="confirmAddToCart()" class="flex-grow bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-brand-500/30 flex items-center justify-between transition-all active:scale-[0.98]">
+                    <span>Adicionar ao Carrinho</span>
+                    <span id="modal-total-btn">R$ 0,00</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DO CARRINHO / CHECKOUT -->
+    <div id="cart-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+        <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bag-shopping text-brand-500 text-lg"></i>
+                    <h2 class="font-bold text-lg text-slate-900">Seu Pedido</h2>
+                </div>
+                <button onclick="closeCartModal()" class="w-8 h-8 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-grow space-y-6">
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Itens Adicionados</h3>
+                    <div id="cart-items-list" class="divide-y divide-slate-100"></div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tipo de Atendimento</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center justify-center gap-2 p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl cursor-pointer text-sm font-semibold text-brand-700 transition-all" id="delivery-option" onclick="setDeliveryType('delivery')">
+                            <input type="radio" name="order_type" value="delivery" checked class="hidden">
+                            <i class="fa-solid fa-motorcycle"></i> Delivery
+                        </label>
+                        <label class="flex items-center justify-center gap-2 p-3 border-2 border-slate-200 bg-white rounded-xl cursor-pointer text-sm font-semibold text-slate-600 transition-all" id="pickup-option" onclick="setDeliveryType('pickup')">
+                            <input type="radio" name="order_type" value="pickup" class="hidden">
+                            <i class="fa-solid fa-store"></i> Retirar no Balcão
+                        </label>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4 space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Seus Dados</h3>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Seu Nome *</label>
+                        <input type="text" id="client-name" placeholder="Ex: Carlos Silva" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Celular *</label>
+                        <input type="text" id="client-phone" placeholder="Ex: 19999999999" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+
+                    <div id="address-fields" class="space-y-3">
+                        <div id="checkout-saved-addresses-box" class="hidden p-3 rounded-xl bg-brand-50/60 border border-brand-200/80 space-y-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <label for="checkout-saved-address-select" class="text-xs font-bold text-brand-700">
+                                    <i class="fa-solid fa-bookmark mr-1"></i> Endereço Salvo (Casa, Trabalho...)
+                                </label>
+                                <button type="button" onclick="closeCartModal(); openCustomerModal();" class="text-[11px] font-semibold text-brand-600 hover:underline">
+                                    Editar endereços
+                                </button>
+                            </div>
+                            <select id="checkout-saved-address-select" onchange="handleCheckoutAddressSelection(this.value)"
+                                class="w-full p-2.5 bg-white border border-brand-200 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Selecione o Bairro (Define a Taxa) *</label>
+                            <select id="client-neighborhood" onchange="updateCheckoutTotals()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50"></select>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="col-span-2">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Endereço (Rua) *</label>
+                                <input type="text" id="client-street" placeholder="Ex: Rua das Flores" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Número *</label>
+                                <input type="text" id="client-number" placeholder="Ex: 123" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Complemento <span class="text-slate-400">(opcional)</span></label>
+                                <input type="text" id="client-complement" placeholder="Ex: Apto 12, Bloco B, Casa fundo" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Ponto de Referência <span class="text-slate-400">(opcional)</span></label>
+                                <input type="text" id="client-reference" placeholder="Ex: Próximo à padaria central" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Forma de Pagamento -->
+                <div class="border-t border-slate-100 pt-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Forma de Pagamento *</h3>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setPaymentMethod('Pix')" id="pay-pix" class="pay-btn p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl text-xs font-bold text-brand-700 flex flex-col items-center justify-center gap-1 transition-all">
+                            <i class="fa-solid fa-qrcode text-base"></i> Pix
+                        </button>
+                        <button type="button" onclick="setPaymentMethod('Cartão')" id="pay-card" class="pay-btn p-3 border-2 border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center justify-center gap-1 transition-all">
+                            <i class="fa-solid fa-credit-card text-base"></i> Cartão
+                        </button>
+                        <button type="button" onclick="setPaymentMethod('Dinheiro')" id="pay-cash" class="pay-btn p-3 border-2 border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center justify-center gap-1 transition-all">
+                            <i class="fa-solid fa-money-bill-wave text-base"></i> Dinheiro
+                        </button>
+                    </div>
+                    
+                    <div id="card-type-container" class="mt-3 hidden bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="block text-xs font-medium text-slate-600 mb-1.5">Qual o tipo de cartão?</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="setCardSubtype('Crédito')" id="card-credito" class="p-2 border-2 border-brand-500 bg-brand-50 rounded-lg text-xs font-bold text-brand-700 transition-all">Crédito</button>
+                            <button type="button" onclick="setCardSubtype('Débito')" id="card-debito" class="p-2 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-600 transition-all">Débito</button>
+                        </div>
+                    </div>
+
+                    <div id="change-container" class="mt-3 hidden">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Troco para quanto?</label>
+                        <input type="text" id="client-change" placeholder="Ex: R$ 50,00 (ou 'Não preciso')" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+
+                    <!-- Campo Opcional de Cupom de Desconto -->
+                    <div class="mt-4 pt-3 border-t border-slate-100">
+                        <label for="coupon-input" class="block text-xs font-semibold text-slate-600 mb-1">
+                            <i class="fa-solid fa-ticket text-brand-500 mr-1"></i> Cupom de Desconto <span class="text-slate-400 font-normal">(opcional)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="coupon-input" placeholder="Digite seu cupom (se tiver)"
+                                class="flex-grow p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <button type="button" onclick="applyCouponCode()"
+                                class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors shrink-0">
+                                Aplicar
+                            </button>
+                            <button type="button" id="btn-clear-coupon" onclick="clearCoupon(true)" class="hidden px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition-colors shrink-0">
+                                Limpar
+                            </button>
+                        </div>
+                        <p id="coupon-feedback" class="hidden mt-1.5 text-xs font-medium"></p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+                    <div class="flex justify-between text-sm text-slate-600">
+                        <span>Subtotal</span>
+                        <span id="cart-subtotal">R$ 0,00</span>
+                    </div>
+                    <div id="discount-row" class="hidden justify-between text-sm font-semibold text-emerald-600">
+                        <span id="discount-label">Desconto</span>
+                        <span id="cart-discount">- R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-slate-600" id="delivery-fee-row">
+                        <span>Taxa de Entrega</span>
+                        <span id="cart-delivery-fee">R$ 0,00</span>
+                    </div>
+                    <div class="border-t border-slate-200 pt-2 flex justify-between font-bold text-base text-slate-900">
+                        <span>Total Geral</span>
+                        <span id="cart-total" class="text-brand-600">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-white border-t border-slate-200 flex-shrink-0">
+                <button id="btn-checkout-whatsapp" onclick="checkoutOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
+                    <i class="fa-solid fa-check-circle text-xl"></i>
+                    <span id="btn-checkout-text">Finalizar Pedido</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL DE LOGIN E RECUPERAÇÃO DE ACESSO DO RESTAURANTE                 -->
+    <!-- ===================================================================== -->
+    <div id="login-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden">
+            <div class="p-6 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-brand-500 flex items-center justify-center">
+                        <i id="login-modal-icon" class="fa-solid fa-store text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 id="login-modal-title" class="font-bold text-base">Acesso Restrito</h2>
+                        <p id="login-modal-subtitle" class="text-xs text-slate-400">Painel do Restaurante</p>
+                    </div>
+                </div>
+                <button onclick="closeLoginModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Usuário</label>
+                    <input type="text" id="admin-user" required placeholder="admin" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Senha</label>
+                    <input type="password" id="admin-pass" required placeholder="••••" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                </div>
+                <p id="login-error" class="hidden text-xs text-red-600 font-medium bg-red-50 p-2.5 rounded-lg border border-red-100">
+                    Usuário ou senha incorretos.
+                </p>
+                <p id="login-success-msg" class="hidden text-xs text-emerald-700 font-medium bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
+                    Senha redefinida com sucesso! Entre com sua nova senha.
+                </p>
+                <button type="submit" id="btn-submit-login" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/30 transition-all">
+                    Entrar no Painel
+                </button>
+                <div class="text-center pt-1">
+                    <button type="button" onclick="toggleLoginRecoveryView('recover')" class="text-xs font-semibold text-slate-500 hover:text-brand-600 underline transition-colors">
+                        Esqueci minha senha
+                    </button>
+                </div>
+            </form>
+
+            <div id="admin-recover-box" class="hidden p-6 space-y-4">
+                <form id="admin-send-code-form" onsubmit="handleAdminSendResetCode(event)" class="space-y-3">
+                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 leading-relaxed">
+                        <i class="fa-brands fa-whatsapp mr-1 font-bold"></i> Enviaremos um <strong>código de confirmação</strong> para o WhatsApp cadastrado do restaurante.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Usuário *</label>
+                        <input type="text" id="recover-admin-user" required placeholder="Ex: admin" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp para Receber o Código *</label>
+                        <input type="tel" id="recover-whatsapp" required placeholder="Ex: 19999999999" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+                    <button type="submit" id="btn-admin-send-code" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                        Enviar Código pelo WhatsApp
+                    </button>
+                </form>
+
+                <form id="admin-confirm-reset-form" onsubmit="handleAdminConfirmReset(event)" class="hidden space-y-3 pt-3 border-t border-slate-100">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Código de Confirmação (WhatsApp) *</label>
+                        <input type="text" id="recover-code-input" required maxlength="6" placeholder="Ex: 123456" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nova Senha *</label>
+                        <input type="password" id="recover-new-pass" required minlength="4" placeholder="Mínimo 4 caracteres" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                    </div>
+                    <button type="submit" id="btn-submit-recover" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm shadow-lg transition-all">
+                        Confirmar Código e Trocar Senha
+                    </button>
+                </form>
+
+                <p id="recover-feedback" class="hidden text-xs font-medium p-2.5 rounded-lg border"></p>
+
+                <div class="text-center pt-1">
+                    <button type="button" onclick="toggleLoginRecoveryView('login')" class="text-xs font-semibold text-slate-500 hover:text-slate-800 underline transition-colors">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Voltar para o login
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL DO PAINEL ADMINISTRATIVO                                        -->
+    <!-- ===================================================================== -->
+    <div id="admin-modal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-5 bg-slate-900 text-white flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center shadow-md">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-lg">Painel do Restaurante</h2>
+                        <p id="admin-api-status" class="text-xs text-slate-400">Sincronizado com FastAPI</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="logoutAdmin()" class="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold transition-colors">
+                        <i class="fa-solid fa-right-from-bracket mr-1"></i> Sair
+                    </button>
+                    <button onclick="closeAdminModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex border-b border-slate-200 bg-slate-50 px-5 pt-3 gap-2 overflow-x-auto flex-shrink-0">
+                <button onclick="switchAdminTab('products')" id="tab-admin-products" class="px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl border-t border-x border-slate-200 bg-white text-brand-600 -mb-px whitespace-nowrap">
+                    <i class="fa-solid fa-burger mr-1.5"></i> Cardápio
+                </button>
+                <button onclick="switchAdminTab('fees')" id="tab-admin-fees" class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i class="fa-solid fa-motorcycle mr-1.5"></i> Taxas
+                </button>
+                <button onclick="switchAdminTab('promotions')" id="tab-admin-promotions" class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i class="fa-solid fa-ticket mr-1.5"></i> Cupons / Promo
+                </button>
+                <button onclick="switchAdminTab('store')" id="tab-admin-store" class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i class="fa-solid fa-clock mr-1.5"></i> Loja / Horário
+                </button>
+                <button onclick="switchAdminTab('security')" id="tab-admin-security" class="px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl text-slate-500 hover:text-slate-800 whitespace-nowrap">
+                    <i class="fa-solid fa-shield-halved mr-1.5"></i> Segurança / Login
+                </button>
+            </div>
+
+            <div class="p-5 overflow-y-auto flex-grow space-y-6">
+                <!-- SEÇÃO 1: PRODUTOS -->
+                <div id="admin-section-products" class="space-y-6">
+                    <form onsubmit="addNewProduct(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-plus text-brand-500"></i> Adicionar Novo Item ao Cardápio
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Nome do Item *</label>
+                                <input type="text" id="new-prod-name" required placeholder="Ex: X-Tudo Especial" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Valor (R$) *</label>
+                                <input type="number" step="0.01" min="0" id="new-prod-price" required placeholder="29.90" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Categoria *</label>
+                                <select id="new-prod-category" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                    <option value="lanches">Lanches</option>
+                                    <option value="acompanhamentos">Acompanhamentos</option>
+                                    <option value="bebidas">Bebidas</option>
+                                    <option value="sobremesas">Sobremesas</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Foto (URL ou Arquivo do PC)</label>
+                                <input type="text" id="new-prod-img-url" placeholder="Cole o link da imagem ou envie abaixo" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Ou selecione uma foto do dispositivo:</label>
+                            <input type="file" id="new-prod-img-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Descrição *</label>
+                            <textarea id="new-prod-desc" required rows="2" placeholder="Ingredientes, peso do hambúrguer, acompanhamentos..." class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50 resize-none"></textarea>
+                        </div>
+
+                        <button type="submit" id="btn-save-product" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                            Salvar Item no Cardápio
+                        </button>
+                    </form>
+
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800 mb-3">Itens Cadastrados (<span id="admin-prod-count">0</span>)</h3>
+                        <div id="admin-products-list" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 2: TAXAS POR BAIRRO -->
+                <div id="admin-section-fees" class="hidden space-y-6">
+                    <form onsubmit="addNewNeighborhoodFee(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-brand-500"></i> Cadastrar / Atualizar Bairro
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Nome do Bairro *</label>
+                                <input type="text" id="new-fee-name" required placeholder="Ex: Jardim Morada do Sol" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Taxa de Entrega (R$) *</label>
+                                <input type="number" step="0.01" min="0" id="new-fee-price" required placeholder="8.00" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+                        <button type="submit" id="btn-save-fee" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                            Salvar Taxa do Bairro
+                        </button>
+                    </form>
+
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800 mb-3">Bairros Atendidos (<span id="admin-fee-count">0</span>)</h3>
+                        <div id="admin-fees-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 3: PROMOÇÕES E CUPONS DE DESCONTO -->
+                <div id="admin-section-promotions" class="hidden space-y-6">
+                    <form onsubmit="addNewCoupon(event)" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-tags text-brand-500"></i> Adicionar Cupom / Promoção
+                        </h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Código do Cupom *</label>
+                                <input type="text" id="new-coupon-code" required placeholder="Ex: LANCHE10" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm uppercase focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Tipo de Desconto *</label>
+                                <select id="new-coupon-type" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                                    <option value="fixed">Valor Fixo (R$)</option>
+                                    <option value="percent">Porcentagem (%)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Valor do Desconto *</label>
+                                <input type="number" step="0.01" min="0.01" id="new-coupon-value" required placeholder="Ex: 5.00 ou 15" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Pedido Mínimo (R$) <span class="text-slate-400">(opcional)</span></label>
+                                <input type="number" step="0.01" min="0" id="new-coupon-min" placeholder="0.00" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Descrição da Promoção <span class="text-slate-400">(opcional)</span></label>
+                            <input type="text" id="new-coupon-desc" placeholder="Ex: Promoção da terça-feira" class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        </div>
+
+                        <button type="submit" id="btn-save-coupon" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl text-sm shadow-md transition-all">
+                            Salvar Cupom / Promoção
+                        </button>
+                    </form>
+
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800 mb-3">Cupons e Promoções Ativos (<span id="admin-coupon-count">0</span>)</h3>
+                        <div id="admin-coupons-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- SEÇÃO 4: STATUS DA LOJA E HORÁRIO DE FUNCIONAMENTO -->
+                <div id="admin-section-store" class="hidden space-y-6">
+                    <form onsubmit="saveStoreSettings(event)" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-5">
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-store text-brand-500"></i> Status de Funcionamento e Horário
+                        </h3>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-2">Situação Atual do Restaurante</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button type="button" id="btn-status-open" onclick="selectAdminStoreStatus(true)" class="p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center gap-2 transition-all">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Aberto para Pedidos
+                                </button>
+                                <button type="button" id="btn-status-closed" onclick="selectAdminStoreStatus(false)" class="p-3.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                                    Fechado no Momento
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Horário de Funcionamento *</label>
+                            <input type="text" id="admin-opening-hours" required placeholder="Ex: Ter a Dom, das 18:00 às 23:30" class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            <p class="text-[11px] text-slate-400 mt-1">Esse texto aparece no selo do cabeçalho e no aviso quando a loja estiver fechada.</p>
+                        </div>
+
+                        <button type="submit" id="btn-save-settings" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-md transition-all">
+                            Salvar Status e Horário
+                        </button>
+                    </form>
+                </div>
+
+                <!-- SEÇÃO 5: SEGURANÇA / ALTERAR LOGIN -->
+                <div id="admin-section-security" class="hidden space-y-6">
+                    <form onsubmit="updateAdminCredentials(event)" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-brand-500"></i> Alterar Credenciais de Acesso
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            Atualize o usuário, a senha e o número de <strong>WhatsApp de recuperação</strong> do painel.
+                        </p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Novo Usuário *</label>
+                                <input type="text" id="sec-new-user" required minlength="3" placeholder="Ex: admin" class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Nova Senha *</label>
+                                <input type="password" id="sec-new-pass" required minlength="4" placeholder="Mínimo 4 caracteres" class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">WhatsApp de Recuperação *</label>
+                            <input type="tel" id="sec-new-whatsapp" required minlength="10" placeholder="Ex: 19999999999" class="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/50">
+                        </div>
+
+                        <button type="submit" id="btn-save-credentials" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl text-sm shadow-md transition-all">
+                            Salvar Novas Credenciais
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin.startsWith('http')
+            ? window.location.origin
+            : 'http://127.0.0.1:8000';
+
+        const CUSTOMER_SESSION_KEY = 'lanchonete_customer_session';
+        const CUSTOMER_USERS_KEY = 'lanchonete_customers_fallback';
+        const CUSTOMER_ADDRESSES_KEY = 'lanchonete_customer_addresses_v1';
+        const CUSTOMER_ORDERS_KEY = 'lanchonete_customer_orders_fallback';
+        const COUPONS_STORAGE_KEY = 'lanchonete_coupons_fallback';
+        const RESET_CODES_FALLBACK_KEY = 'lanchonete_reset_codes_fallback';
+
+        let pendingResetState = {
+            customer: { phone: '', code: '', verified: false },
+            admin: { phone: '', username: '' }
+        };
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function normalizePhone(phone) {
+            const digits = String(phone || '').replace(/\D/g, '');
+            if (digits.length === 10 || digits.length === 11) {
+                return `55${digits}`;
+            }
+            return digits;
+        }
+
+        function phonesMatch(a, b) {
+            const da = String(a || '').replace(/\D/g, '');
+            const db = String(b || '').replace(/\D/g, '');
+            if (!da || !db) return false;
+            return da === db || `55${da}` === db || `55${db}` === da;
+        }
+
+        function normalizeCouponCode(code) {
+            return String(code || '').trim().toUpperCase();
+        }
+
+        function getFallbackCredentials() {
+            const saved = localStorage.getItem('lanchonete_fallback_creds');
+            return saved ? JSON.parse(saved) : { user: 'admin', pass: '1234', whatsapp: '5519999999999' };
+        }
+
+        function showFeedbackBox(el, message, kind = 'info') {
+            if (!el) return;
+            if (!message) {
+                el.classList.add('hidden');
+                el.innerText = '';
+                return;
+            }
+            el.classList.remove('hidden');
+            el.innerText = message;
+            if (kind === 'success') {
+                el.className = 'text-xs font-medium text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200';
+            } else if (kind === 'error') {
+                el.className = 'text-xs font-medium text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100';
+            } else {
+                el.className = 'text-xs font-medium text-slate-700 bg-slate-100 p-2.5 rounded-lg border border-slate-200';
+            }
+        }
+
+        function createLocalResetCode(scope, phone, username = '') {
+            const code = String(Math.floor(100000 + Math.random() * 900000));
+            const all = JSON.parse(localStorage.getItem(RESET_CODES_FALLBACK_KEY) || '{}');
+            all[`${scope}:${normalizePhone(phone)}`] = {
+                code,
+                username,
+                expiresAt: Date.now() + 10 * 60 * 1000
+            };
+            localStorage.setItem(RESET_CODES_FALLBACK_KEY, JSON.stringify(all));
+            return code;
+        }
+
+        function verifyLocalResetCode(scope, phone, code) {
+            const all = JSON.parse(localStorage.getItem(RESET_CODES_FALLBACK_KEY) || '{}');
+            const cleanPhone = normalizePhone(phone);
+            const entry = all[`${scope}:${cleanPhone}`] || Object.values(all).find(
+                (item, key) => key.startsWith(`${scope}:`) && phonesMatch(key.split(':')[1], phone)
+            );
+            if (!entry || Date.now() > entry.expiresAt) {
+                return { ok: false, reason: 'Código inválido ou expirado.' };
+            }
+            if (entry.code !== String(code || '').trim()) {
+                return { ok: false, reason: 'Código de confirmação incorreto.' };
+            }
+            return { ok: true, username: entry.username };
+        }
+
+        function getLocalCoupons() {
+            const raw = localStorage.getItem(COUPONS_STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        }
+
+        function saveLocalCoupons(list) {
+            localStorage.setItem(COUPONS_STORAGE_KEY, JSON.stringify(list));
+        }
+
+        const fallbackProducts = [
+            {
+                id: 1,
+                category: 'lanches',
+                name: 'X-Bacon Artesanal Supremo',
+                description: 'Pão brioche selado na manteiga, burger 160g, duplo cheddar e bacon crocante.',
+                price: 34.90,
+                image: 'https://placehold.co/600x400/f43f5e/ffffff?text=X-Bacon',
+                addons: []
+            },
+            {
+                id: 2,
+                category: 'bebidas',
+                name: 'Coca-Cola Lata 350ml',
+                description: 'Lata bem gelada.',
+                price: 6.50,
+                image: 'https://placehold.co/600x400/ef4444/ffffff?text=Coca-Cola+Lata',
+                addons: []
+            }
+        ];
+
+        const fallbackFees = [
+            { id: 1, name: 'Centro', fee: 5.00 },
+            { id: 2, name: 'Jardim Morada do Sol', fee: 8.00 }
+        ];
+
+        let storeSettings = { is_open: true, opening_hours: '18:00 às 23:00' };
+        let adminDraftIsOpen = true;
+
+        let menuProducts = [];
+        let neighborhoodFees = [];
+        let couponsList = [];
+        let appliedCoupon = null;
+        let cart = [];
+        let currentCategory = 'lanches';
+        let currentSelectedProduct = null;
+        let modalQty = 1;
+        let selectedAddons = {};
+        let deliveryType = 'delivery';
+        let paymentMethod = 'Pix';
+        let cardSubtype = 'Crédito';
+
+        window.onload = async function() {
+            const cleanHost = API_BASE_URL.replace(/^https?:\/\//, '');
+            document.getElementById('api-notice-url').innerText = cleanHost;
+            document.getElementById('admin-api-status').innerText = `Sincronizado com FastAPI (${cleanHost})`;
+
+            checkAdminSession();
+            updateCustomerHeaderButton();
+            renderAllNeighborhoodSelects();
+            const activeCust = getActiveCustomer();
+            if (activeCust) fillCheckoutWithCustomer(activeCust);
+            updateCartUI();
+            await loadBackendData();
+        };
+
+        function getAllSavedAddressesMap() {
+            try {
+                return JSON.parse(localStorage.getItem(CUSTOMER_ADDRESSES_KEY) || '{}');
+            } catch {
+                return {};
+            }
+        }
+
+        function saveAllSavedAddressesMap(map) {
+            localStorage.setItem(CUSTOMER_ADDRESSES_KEY, JSON.stringify(map));
+        }
+
+        function getCustomerAddresses(phone) {
+            const cleanPhone = normalizePhone(phone);
+            if (!cleanPhone) return [];
+            const map = getAllSavedAddressesMap();
+            const key = Object.keys(map).find(k => phonesMatch(k, cleanPhone)) || cleanPhone;
+            return Array.isArray(map[key]) ? map[key] : [];
+        }
+
+        function setCustomerAddresses(phone, addresses) {
+            const cleanPhone = normalizePhone(phone);
+            if (!cleanPhone) return;
+            const map = getAllSavedAddressesMap();
+            const oldKey = Object.keys(map).find(k => phonesMatch(k, cleanPhone));
+            if (oldKey && oldKey !== cleanPhone) {
+                delete map[oldKey];
+            }
+            map[cleanPhone] = addresses;
+            saveAllSavedAddressesMap(map);
+
+            const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || null;
+            const users = JSON.parse(localStorage.getItem(CUSTOMER_USERS_KEY) || '{}');
+            const userKey = Object.keys(users).find(k => phonesMatch(k, cleanPhone));
+            if (userKey && users[userKey]) {
+                users[userKey].addresses = addresses;
+                if (defaultAddr) {
+                    users[userKey].neighborhood = defaultAddr.neighborhood || '';
+                    users[userKey].street = defaultAddr.street || '';
+                    users[userKey].number = defaultAddr.number || '';
+                    users[userKey].complement = defaultAddr.complement || '';
+                    users[userKey].reference = defaultAddr.reference || '';
+                }
+                localStorage.setItem(CUSTOMER_USERS_KEY, JSON.stringify(users));
+            }
+
+            const active = getActiveCustomer();
+            if (active && phonesMatch(active.phone, cleanPhone)) {
+                const updatedActive = {
+                    ...active,
+                    addresses,
+                    neighborhood: defaultAddr ? (defaultAddr.neighborhood || '') : '',
+                    street: defaultAddr ? (defaultAddr.street || '') : '',
+                    number: defaultAddr ? (defaultAddr.number || '') : '',
+                    complement: defaultAddr ? (defaultAddr.complement || '') : '',
+                    reference: defaultAddr ? (defaultAddr.reference || '') : ''
+                };
+                sessionStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(updatedActive));
+                fillCheckoutWithCustomer(updatedActive);
+            }
+        }
+
+        function renderCustomerNeighborhoodDropdowns() {
+            const selectIds = ['cust-reg-neighborhood', 'cust-addr-neighborhood'];
+            selectIds.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+                const previousVal = select.value;
+                select.innerHTML = '';
+
+                if (neighborhoodFees.length === 0) {
+                    select.innerHTML = `<option value="Centro">Centro</option>`;
+                    return;
+                }
+
+                neighborhoodFees.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.name;
+                    opt.textContent = item.name;
+                    select.appendChild(opt);
+                });
+
+                if (previousVal) {
+                    const match = Array.from(select.options).find(o => o.value.toLowerCase() === previousVal.toLowerCase());
+                    if (match) select.value = match.value;
+                }
+            });
+        }
+
+        function renderAllNeighborhoodSelects() {
+            renderNeighborhoodSelect();
+            renderCustomerNeighborhoodDropdowns();
+        }
+
+        function selectNeighborhoodByName(neighborhoodName) {
+            const select = document.getElementById('client-neighborhood');
+            if (!select || !neighborhoodName) return;
+
+            const target = String(neighborhoodName).trim().toLowerCase();
+            const matchedOption = Array.from(select.options).find(opt => {
+                const optName = (opt.dataset.name || opt.textContent || '').trim().toLowerCase();
+                return optName === target || optName.startsWith(target);
+            });
+
+            if (matchedOption) {
+                select.value = matchedOption.value;
+            }
+        }
+
+        function applyAddressObjectToCheckout(addr) {
+            if (!addr) return;
+            const streetInput = document.getElementById('client-street');
+            const numberInput = document.getElementById('client-number');
+            const complementInput = document.getElementById('client-complement');
+            const referenceInput = document.getElementById('client-reference');
+
+            if (streetInput) streetInput.value = addr.street || '';
+            if (numberInput) numberInput.value = addr.number || '';
+            if (complementInput) complementInput.value = addr.complement || '';
+            if (referenceInput) referenceInput.value = addr.reference || '';
+
+            if (addr.neighborhood) {
+                selectNeighborhoodByName(addr.neighborhood);
+            }
+            updateCheckoutTotals();
+        }
+
+        function renderCheckoutSavedAddressesSelector(cust) {
+            const box = document.getElementById('checkout-saved-addresses-box');
+            const select = document.getElementById('checkout-saved-address-select');
+            if (!box || !select) return;
+
+            if (!cust || !cust.phone) {
+                box.classList.add('hidden');
+                select.innerHTML = '';
+                return;
+            }
+
+            const addresses = getCustomerAddresses(cust.phone);
+            if (!addresses.length) {
+                box.classList.add('hidden');
+                select.innerHTML = '';
+                return;
+            }
+
+            box.classList.remove('hidden');
+            select.innerHTML = '';
+
+            addresses.forEach(addr => {
+                const opt = document.createElement('option');
+                opt.value = addr.id;
+                const complPart = addr.complement ? ` (${addr.complement})` : '';
+                const defaultTag = addr.isDefault ? ' [Padrão]' : '';
+                opt.textContent = `${addr.label}${defaultTag} — ${addr.street}, ${addr.number}${complPart} - ${addr.neighborhood}`;
+                select.appendChild(opt);
+            });
+
+            const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+            if (defaultAddr) {
+                select.value = defaultAddr.id;
+                applyAddressObjectToCheckout(defaultAddr);
+            }
+        }
+
+        function handleCheckoutAddressSelection(addressId) {
+            const cust = getActiveCustomer();
+            if (!cust) return;
+            const addresses = getCustomerAddresses(cust.phone);
+            const selected = addresses.find(a => String(a.id) === String(addressId));
+            if (selected) {
+                applyAddressObjectToCheckout(selected);
+            }
+        }
+
+        function fillCheckoutWithCustomer(cust) {
+            if (!cust) return;
+
+            const nameInput = document.getElementById('client-name');
+            const phoneInput = document.getElementById('client-phone');
+            if (nameInput && cust.name) nameInput.value = cust.name;
+            if (phoneInput && cust.phone) phoneInput.value = cust.phone;
+
+            const addresses = getCustomerAddresses(cust.phone);
+            if (addresses.length > 0) {
+                renderCheckoutSavedAddressesSelector(cust);
+                const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
+                applyAddressObjectToCheckout(defaultAddr);
+                return;
+            }
+
+            document.getElementById('checkout-saved-addresses-box')?.classList.add('hidden');
+
+            const streetInput = document.getElementById('client-street');
+            const numberInput = document.getElementById('client-number');
+            const complementInput = document.getElementById('client-complement');
+            const referenceInput = document.getElementById('client-reference');
+
+            if (streetInput) streetInput.value = cust.street || '';
+            if (numberInput) numberInput.value = cust.number || '';
+            if (complementInput) complementInput.value = cust.complement || '';
+            if (referenceInput) referenceInput.value = cust.reference || '';
+
+            if (cust.neighborhood) {
+                selectNeighborhoodByName(cust.neighborhood);
+            }
+        }
+
+        function getActiveCustomer() {
+            const raw = sessionStorage.getItem(CUSTOMER_SESSION_KEY);
+            return raw ? JSON.parse(raw) : null;
+        }
+
+        function setActiveCustomer(customer) {
+            if (customer) {
+                const cleanPhone = normalizePhone(customer.phone);
+                let addresses = getCustomerAddresses(cleanPhone);
+
+                if (addresses.length === 0 && (customer.street || customer.neighborhood)) {
+                    addresses = [{
+                        id: 'addr_' + Date.now(),
+                        label: customer.label || 'Casa',
+                        neighborhood: customer.neighborhood || (neighborhoodFees[0]?.name || 'Centro'),
+                        street: customer.street || '',
+                        number: customer.number || '',
+                        complement: customer.complement || '',
+                        reference: customer.reference || '',
+                        isDefault: true
+                    }];
+                    const map = getAllSavedAddressesMap();
+                    map[cleanPhone] = addresses;
+                    saveAllSavedAddressesMap(map);
+                }
+
+                const defaultAddr = addresses.find(a => a.isDefault) || addresses[0] || {};
+                const fullCustomer = {
+                    ...customer,
+                    phone: cleanPhone,
+                    addresses,
+                    neighborhood: defaultAddr.neighborhood || customer.neighborhood || '',
+                    street: defaultAddr.street || customer.street || '',
+                    number: defaultAddr.number || customer.number || '',
+                    complement: defaultAddr.complement || customer.complement || '',
+                    reference: defaultAddr.reference || customer.reference || ''
+                };
+
+                sessionStorage.setItem(CUSTOMER_SESSION_KEY, JSON.stringify(fullCustomer));
+                fillCheckoutWithCustomer(fullCustomer);
+            } else {
+                sessionStorage.removeItem(CUSTOMER_SESSION_KEY);
+                document.getElementById('checkout-saved-addresses-box')?.classList.add('hidden');
+            }
+            updateCustomerHeaderButton();
+        }
+
+        function updateCustomerHeaderButton() {
+            const cust = getActiveCustomer();
+            const label = document.getElementById('customer-account-label');
+            if (!label) return;
+            label.innerText = cust ? `Olá, ${cust.name.split(' ')[0]} (Minha Conta)` : 'Entrar / Meus Pedidos';
+        }
+
+        function resetCheckoutFieldsAfterOrder() {
+            const activeCust = getActiveCustomer();
+            const nameInput = document.getElementById('client-name');
+            const phoneInput = document.getElementById('client-phone');
+            const streetInput = document.getElementById('client-street');
+            const numberInput = document.getElementById('client-number');
+            const complementInput = document.getElementById('client-complement');
+            const referenceInput = document.getElementById('client-reference');
+            const changeInput = document.getElementById('client-change');
+            const neighborhoodSelect = document.getElementById('client-neighborhood');
+
+            if (changeInput) changeInput.value = '';
+            clearCoupon(false);
+            setPaymentMethod('Pix');
+            setCardSubtype('Crédito');
+            setDeliveryType('delivery');
+
+            if (!activeCust) {
+                if (nameInput) nameInput.value = '';
+                if (phoneInput) phoneInput.value = '';
+                if (streetInput) streetInput.value = '';
+                if (numberInput) numberInput.value = '';
+                if (complementInput) complementInput.value = '';
+                if (referenceInput) referenceInput.value = '';
+                if (neighborhoodSelect && neighborhoodSelect.options.length > 0) {
+                    neighborhoodSelect.selectedIndex = 0;
+                }
+            } else {
+                fillCheckoutWithCustomer(activeCust);
+            }
+
+            updateCheckoutTotals();
+        }
+
+        function openCustomerModal() {
+            renderCustomerNeighborhoodDropdowns();
+            document.getElementById('customer-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            switchCustomerAuthTab('login');
+            renderCustomerModalView();
+        }
+
+        function closeCustomerModal() {
+            document.getElementById('customer-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function switchLoggedCustomerSubtab(subtab) {
+            const tabAddr = document.getElementById('tab-logged-addresses');
+            const tabOrd = document.getElementById('tab-logged-orders');
+            const panelAddr = document.getElementById('customer-addresses-panel');
+            const panelOrd = document.getElementById('customer-orders-panel');
+
+            if (subtab === 'addresses') {
+                tabAddr.className = 'py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition-all';
+                tabOrd.className = 'py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all';
+                panelAddr.classList.remove('hidden');
+                panelOrd.classList.add('hidden');
+            } else {
+                tabOrd.className = 'py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition-all';
+                tabAddr.className = 'py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all';
+                panelOrd.classList.remove('hidden');
+                panelAddr.classList.add('hidden');
+            }
+        }
+
+        function renderCustomerSavedAddressesList() {
+            const cust = getActiveCustomer();
+            const container = document.getElementById('customer-saved-addresses-list');
+            if (!cust || !container) return;
+
+            const addresses = getCustomerAddresses(cust.phone);
+            container.innerHTML = '';
+
+            if (!addresses.length) {
+                container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">Nenhum endereço salvo ainda. Cadastre abaixo (ex.: Casa, Trabalho).</p>`;
+                return;
+            }
+
+            addresses.forEach(addr => {
+                const card = document.createElement('div');
+                card.className = `p-3.5 rounded-2xl border transition-all ${addr.isDefault ? 'bg-brand-50/40 border-brand-300' : 'bg-white border-slate-200'}`;
+
+                const complHtml = addr.complement ? `<span><strong>Compl.:</strong> ${escapeHtml(addr.complement)}</span>` : '';
+                const refHtml = addr.reference ? `<span><strong>Ref.:</strong> ${escapeHtml(addr.reference)}</span>` : '';
+                const extraLine = (complHtml || refHtml)
+                    ? `<div class="text-[11px] text-slate-500 flex flex-wrap gap-x-3 gap-y-0.5 mt-1">${complHtml}${refHtml}</div>`
+                    : '';
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-extrabold text-slate-900">${escapeHtml(addr.label)}</span>
+                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">${escapeHtml(addr.neighborhood)}</span>
+                                ${addr.isDefault ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-500 text-white">Padrão</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-700 font-medium mt-1">${escapeHtml(addr.street)}, nº ${escapeHtml(addr.number)}</p>
+                            ${extraLine}
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${!addr.isDefault ? `<button type="button" onclick="setDefaultCustomerAddress('${escapeHtml(addr.id)}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold" title="Definir como padrão">Padrão</button>` : ''}
+                            <button type="button" onclick="editCustomerAddress('${escapeHtml(addr.id)}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center" title="Editar endereço">
+                                <i class="fa-solid fa-pen text-[11px]"></i>
+                            </button>
+                            <button type="button" onclick="deleteCustomerAddress('${escapeHtml(addr.id)}')" class="w-7 h-7 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center" title="Excluir endereço">
+                                <i class="fa-solid fa-trash text-[11px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function resetCustomerAddressForm() {
+            document.getElementById('cust-addr-edit-id').value = '';
+            document.getElementById('customer-address-form').reset();
+            document.getElementById('cust-addr-default').checked = true;
+            document.getElementById('cust-addr-form-title').innerHTML = `<i class="fa-solid fa-plus-circle text-brand-500 mr-1"></i> Adicionar Novo Endereço`;
+            document.getElementById('btn-save-cust-addr').innerText = 'Salvar Endereço';
+            document.getElementById('btn-cancel-edit-addr').classList.add('hidden');
+            renderCustomerNeighborhoodDropdowns();
+        }
+
+        function editCustomerAddress(addressId) {
+            const cust = getActiveCustomer();
+            if (!cust) return;
+            const addresses = getCustomerAddresses(cust.phone);
+            const target = addresses.find(a => String(a.id) === String(addressId));
+            if (!target) return;
+
+            renderCustomerNeighborhoodDropdowns();
+            document.getElementById('cust-addr-edit-id').value = target.id;
+            document.getElementById('cust-addr-label').value = target.label || '';
+            document.getElementById('cust-addr-neighborhood').value = target.neighborhood || '';
+            document.getElementById('cust-addr-street').value = target.street || '';
+            document.getElementById('cust-addr-number').value = target.number || '';
+            document.getElementById('cust-addr-complement').value = target.complement || '';
+            document.getElementById('cust-addr-reference').value = target.reference || '';
+            document.getElementById('cust-addr-default').checked = Boolean(target.isDefault);
+
+            document.getElementById('cust-addr-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-brand-500 mr-1"></i> Editando: ${escapeHtml(target.label)}`;
+            document.getElementById('btn-save-cust-addr').innerText = 'Atualizar Endereço';
+            document.getElementById('btn-cancel-edit-addr').classList.remove('hidden');
+            document.getElementById('cust-addr-label').focus();
+        }
+
+        function saveCustomerAddressForm(e) {
+            e.preventDefault();
+            const cust = getActiveCustomer();
+            if (!cust) return;
+
+            const editId = document.getElementById('cust-addr-edit-id').value.trim();
+            const label = document.getElementById('cust-addr-label').value.trim() || 'Casa';
+            const neighborhood = document.getElementById('cust-addr-neighborhood').value.trim();
+            const street = document.getElementById('cust-addr-street').value.trim();
+            const number = document.getElementById('cust-addr-number').value.trim();
+            const complement = document.getElementById('cust-addr-complement').value.trim();
+            const reference = document.getElementById('cust-addr-reference').value.trim();
+            const isDefault = document.getElementById('cust-addr-default').checked;
+
+            let addresses = getCustomerAddresses(cust.phone);
+
+            if (isDefault || addresses.length === 0) {
+                addresses = addresses.map(a => ({ ...a, isDefault: false }));
+            }
+
+            if (editId) {
+                addresses = addresses.map(a => {
+                    if (String(a.id) === String(editId)) {
+                        return {
+                            ...a,
+                            label,
+                            neighborhood,
+                            street,
+                            number,
+                            complement,
+                            reference,
+                            isDefault: isDefault || addresses.length === 1
+                        };
+                    }
+                    return a;
+                });
+            } else {
+                addresses.push({
+                    id: 'addr_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                    label,
+                    neighborhood,
+                    street,
+                    number,
+                    complement,
+                    reference,
+                    isDefault: isDefault || addresses.length === 0
+                });
+            }
+
+            if (!addresses.some(a => a.isDefault) && addresses.length > 0) {
+                addresses[0].isDefault = true;
+            }
+
+            setCustomerAddresses(cust.phone, addresses);
+            resetCustomerAddressForm();
+            renderCustomerSavedAddressesList();
+        }
+
+        function setDefaultCustomerAddress(addressId) {
+            const cust = getActiveCustomer();
+            if (!cust) return;
+            const addresses = getCustomerAddresses(cust.phone).map(a => ({
+                ...a,
+                isDefault: String(a.id) === String(addressId)
+            }));
+            setCustomerAddresses(cust.phone, addresses);
+            renderCustomerSavedAddressesList();
+        }
+
+        function deleteCustomerAddress(addressId) {
+            const cust = getActiveCustomer();
+            if (!cust) return;
+            let addresses = getCustomerAddresses(cust.phone).filter(a => String(a.id) !== String(addressId));
+            if (addresses.length > 0 && !addresses.some(a => a.isDefault)) {
+                addresses[0].isDefault = true;
+            }
+            setCustomerAddresses(cust.phone, addresses);
+            renderCustomerSavedAddressesList();
+        }
+
+        function resetCustomerForgotStepsUI() {
+            document.getElementById('customer-send-code-form').classList.remove('hidden');
+            document.getElementById('customer-verify-code-form').classList.add('hidden');
+            document.getElementById('customer-confirm-reset-form').classList.add('hidden');
+            document.getElementById('customer-verify-code-form').reset();
+            document.getElementById('customer-confirm-reset-form').reset();
+            pendingResetState.customer = { phone: '', code: '', verified: false };
+        }
+
+        function switchCustomerAuthTab(mode) {
+            const tabsBar = document.getElementById('customer-auth-tabs');
+            const loginForm = document.getElementById('customer-login-form');
+            const regForm = document.getElementById('customer-register-form');
+            const forgotBox = document.getElementById('customer-forgot-box');
+            const tabLogin = document.getElementById('tab-cust-login');
+            const tabReg = document.getElementById('tab-cust-register');
+            const title = document.getElementById('customer-modal-title');
+            const subtitle = document.getElementById('customer-modal-subtitle');
+
+            document.getElementById('cust-auth-error').classList.add('hidden');
+            document.getElementById('cust-reg-error').classList.add('hidden');
+            showFeedbackBox(document.getElementById('cust-forgot-feedback'), '');
+
+            if (mode === 'forgot') {
+                tabsBar.classList.add('hidden');
+                loginForm.classList.add('hidden');
+                regForm.classList.add('hidden');
+                forgotBox.classList.remove('hidden');
+                resetCustomerForgotStepsUI();
+                title.innerText = 'Recuperar Senha';
+                subtitle.innerText = 'Envio por WhatsApp e redefinição em 3 etapas';
+                return;
+            }
+
+            tabsBar.classList.remove('hidden');
+            forgotBox.classList.add('hidden');
+            title.innerText = 'Área do Cliente';
+            subtitle.innerText = 'Acesse sua conta, endereços e compras';
+
+            if (mode === 'login') {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                tabLogin.className = 'py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition-all';
+                tabReg.className = 'py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all';
+            } else {
+                renderCustomerNeighborhoodDropdowns();
+                regForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                tabReg.className = 'py-2 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm transition-all';
+                tabLogin.className = 'py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition-all';
+            }
+        }
+
+        function openCustomerForgotView() {
+            const currentLoginPhone = document.getElementById('cust-login-phone').value.trim();
+            document.getElementById('cust-reset-success').classList.add('hidden');
+            switchCustomerAuthTab('forgot');
+            if (currentLoginPhone) {
+                document.getElementById('cust-forgot-phone').value = currentLoginPhone;
+            }
+        }
+
+        function openWhatsappWithResetCode(phone, code) {
+            const cleanPhone = normalizePhone(phone);
+            const message = `Seu código de recuperação de senha da lanchonete é: ${code}. Válido por 10 minutos.`;
+            const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+            window.open(waUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        function reopenCustomerWhatsappCode() {
+            if (!pendingResetState.customer.phone || !pendingResetState.customer.code) return;
+            openWhatsappWithResetCode(pendingResetState.customer.phone, pendingResetState.customer.code);
+        }
+
+        async function handleCustomerSendResetCode(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-cust-send-code');
+            const feedback = document.getElementById('cust-forgot-feedback');
+            const verifyForm = document.getElementById('customer-verify-code-form');
+            const rawPhone = document.getElementById('cust-forgot-phone').value.trim();
+            const cleanPhone = normalizePhone(rawPhone);
+
+            if (cleanPhone.length < 12) {
+                showFeedbackBox(feedback, 'Informe um número de WhatsApp válido com DDD.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Enviando código...';
+            showFeedbackBox(feedback, '');
+            verifyForm.classList.add('hidden');
+            document.getElementById('customer-confirm-reset-form').classList.add('hidden');
+            pendingResetState.customer = { phone: cleanPhone, code: '', verified: false };
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ scope: 'customer', phone: cleanPhone })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Não foi possível enviar o código.');
+                }
+
+                const codeToSend = String(data.dev_code || createLocalResetCode('customer', cleanPhone));
+                const all = JSON.parse(localStorage.getItem(RESET_CODES_FALLBACK_KEY) || '{}');
+                all[`customer:${cleanPhone}`] = {
+                    code: codeToSend,
+                    expiresAt: Date.now() + 10 * 60 * 1000
+                };
+                localStorage.setItem(RESET_CODES_FALLBACK_KEY, JSON.stringify(all));
+
+                pendingResetState.customer = { phone: cleanPhone, code: codeToSend, verified: false };
+                openWhatsappWithResetCode(cleanPhone, codeToSend);
+
+                document.getElementById('cust-reset-phone-display').innerText = cleanPhone;
+                verifyForm.classList.remove('hidden');
+                document.getElementById('cust-reset-code').focus();
+                showFeedbackBox(
+                    feedback,
+                    `Código enviado para o WhatsApp ${cleanPhone}. Digite o código recebido para avançar para a nova senha.`,
+                    'success'
+                );
+            } catch (err) {
+                if (err.message && !err.message.includes('Failed to fetch')) {
+                    showFeedbackBox(feedback, err.message, 'error');
+                } else {
+                    const users = JSON.parse(localStorage.getItem(CUSTOMER_USERS_KEY) || '{}');
+                    const foundKey = Object.keys(users).find(k => phonesMatch(k, rawPhone) || phonesMatch(users[k]?.phone, rawPhone));
+                    if (!foundKey) {
+                        showFeedbackBox(feedback, 'WhatsApp não encontrado no cadastro.', 'error');
+                    } else {
+                        const targetPhone = normalizePhone(users[foundKey].phone || foundKey);
+                        const codeToSend = createLocalResetCode('customer', targetPhone);
+                        pendingResetState.customer = { phone: targetPhone, code: codeToSend, verified: false };
+
+                        openWhatsappWithResetCode(targetPhone, codeToSend);
+                        document.getElementById('cust-reset-phone-display').innerText = targetPhone;
+                        verifyForm.classList.remove('hidden');
+                        document.getElementById('cust-reset-code').focus();
+                        showFeedbackBox(
+                            feedback,
+                            `Código enviado para o WhatsApp ${targetPhone}. Digite o código para continuar.`,
+                            'success'
+                        );
+                    }
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Enviar Código pelo WhatsApp';
+            }
+        }
+
+        async function handleCustomerVerifyResetCode(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-cust-verify-code');
+            const feedback = document.getElementById('cust-forgot-feedback');
+            const codeInput = document.getElementById('cust-reset-code').value.trim();
+            const phone = pendingResetState.customer.phone || normalizePhone(document.getElementById('cust-forgot-phone').value);
+
+            btn.disabled = true;
+            btn.innerText = 'Confirmando...';
+
+            try {
+                const localCheck = verifyLocalResetCode('customer', phone, codeInput);
+                const matchesPending = pendingResetState.customer.code && pendingResetState.customer.code === codeInput;
+
+                if (!localCheck.ok && !matchesPending) {
+                    throw new Error(localCheck.reason || 'Código inválido ou expirado.');
+                }
+
+                pendingResetState.customer = {
+                    phone,
+                    code: codeInput,
+                    verified: true
+                };
+
+                document.getElementById('customer-send-code-form').classList.add('hidden');
+                document.getElementById('customer-verify-code-form').classList.add('hidden');
+                document.getElementById('cust-reset-confirmed-phone').innerText = phone;
+                document.getElementById('customer-confirm-reset-form').classList.remove('hidden');
+                document.getElementById('cust-reset-new-pass').focus();
+                showFeedbackBox(
+                    feedback,
+                    'Código confirmado! Digite e confirme sua nova senha abaixo.',
+                    'success'
+                );
+            } catch (err) {
+                showFeedbackBox(feedback, err.message || 'Código inválido ou expirado.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Confirmar Código';
+            }
+        }
+
+        async function handleCustomerConfirmReset(e) {
+            e.preventDefault();
+            if (!pendingResetState.customer.verified) {
+                showFeedbackBox(document.getElementById('cust-forgot-feedback'), 'Confirme primeiro o código recebido no WhatsApp.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btn-cust-confirm-reset');
+            const feedback = document.getElementById('cust-forgot-feedback');
+            const phone = pendingResetState.customer.phone;
+            const code = pendingResetState.customer.code;
+            const newPassword = document.getElementById('cust-reset-new-pass').value;
+            const confirmPassword = document.getElementById('cust-reset-confirm-pass').value;
+
+            if (newPassword !== confirmPassword) {
+                showFeedbackBox(feedback, 'A nova senha e a confirmação de senha devem ser iguais.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Alterando senha...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scope: 'customer',
+                        phone,
+                        code,
+                        new_password: newPassword
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Não foi possível alterar a senha.');
+                }
+
+                const users = JSON.parse(localStorage.getItem(CUSTOMER_USERS_KEY) || '{}');
+                const matchedKey = Object.keys(users).find(k => phonesMatch(k, phone) || phonesMatch(users[k]?.phone, phone));
+                if (matchedKey) {
+                    users[matchedKey].password = newPassword;
+                    localStorage.setItem(CUSTOMER_USERS_KEY, JSON.stringify(users));
+                }
+
+                document.getElementById('customer-send-code-form').reset();
+                resetCustomerForgotStepsUI();
+                switchCustomerAuthTab('login');
+                document.getElementById('cust-login-phone').value = phone;
+                const okEl = document.getElementById('cust-reset-success');
+                okEl.innerText = data.message || `Senha alterada com sucesso para o cadastro ${phone}! Faça login.`;
+                okEl.classList.remove('hidden');
+            } catch (err) {
+                if (err.message && !err.message.includes('Failed to fetch')) {
+                    showFeedbackBox(feedback, err.message, 'error');
+                } else {
+                    const users = JSON.parse(localStorage.getItem(CUSTOMER_USERS_KEY) || '{}');
+                    const matchedKey = Object.keys(users).find(k => phonesMatch(k, phone) || phonesMatch(users[k]?.phone, phone));
+                    if (!matchedKey) {
+                        showFeedbackBox(feedback, 'Cadastro não encontrado para o número informado.', 'error');
+                    } else {
+                        users[matchedKey].password = newPassword;
+                        localStorage.setItem(CUSTOMER_USERS_KEY, JSON.stringify(users));
+
+                        document.getElementById('customer-send-code-form').reset();
+                        resetCustomerForgotStepsUI();
+                        switchCustomerAuthTab('login');
+                        document.getElementById('cust-login-phone').value = phone;
+                        const okEl = document.getElementById('cust-reset-success');
+                        okEl.innerText = `Senha alterada com sucesso para o cadastro ${phone}! Entre com sua nova senha.`;
+                        okEl.classList.remove('hidden');
+                    }
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Alterar Senha';
+            }
+        }
+
+        async function renderCustomerModalView() {
+            const cust = getActiveCustomer();
+            const authBox = document.getElementById('customer-auth-box');
+            const histBox = document.getElementById('customer-history-box');
+
+            if (!cust) {
+                authBox.classList.remove('hidden');
+                histBox.classList.add('hidden');
+                return;
+            }
+
+            authBox.classList.add('hidden');
+            histBox.classList.remove('hidden');
+            document.getElementById('cust-profile-name').innerText = cust.name;
+            document.getElementById('cust-profile-phone').innerText = cust.phone;
+
+            renderCustomerNeighborhoodDropdowns();
+            renderCustomerSavedAddressesList();
+            switchLoggedCustomerSubtab('addresses');
+            await loadCustomerOrders(cust.phone);
+        }
+
+        async function handleCustomerRegister(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('cust-reg-error');
+            errEl.classList.add('hidden');
+
+            const name = document.getElementById('cust-reg-name').value.trim();
+            const phone = normalizePhone(document.getElementById('cust-reg-phone').value);
+            const password = document.getElementById('cust-reg-pass').value;
+            const label = document.getElementById('cust-reg-label').value.trim() || 'Casa';
+            const neighborhood = document.getElementById('cust-reg-neighborhood').value.trim();
+            const street = document.getElementById('cust-reg-street').value.trim();
+            const number = document.getElementById('cust-reg-number').value.trim();
+            const complement = document.getElementById('cust-reg-complement').value.trim();
+            const reference = document.getElementById('cust-reg-reference').value.trim();
+
+            if (phone.length < 12) {
+                errEl.innerText = 'Informe um número de WhatsApp válido com DDD.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            const firstAddress = {
+                id: 'addr_' + Date.now(),
+                label,
+                neighborhood,
+                street,
+                number,
+                complement,
+                reference,
+                isDefault: true
+            };
+
+            const payload = {
+                name,
+                phone,
+                password,
+                neighborhood,
+                street,
+                number,
+                complement,
+                reference,
+                addresses: [firstAddress]
+            };
+
+            const users = JSON.parse(localStorage.getItem(CUSTOMER_USERS_KEY) || '{}');
+            users[phone] = payload;
+            localStorage.setItem(CUSTOMER_USERS_KEY, JSON.stringify(users));
+            setCustomerAddresses(phone, [firstAddress]);
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/customers/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(data.detail || 'Não foi possível concluir o cadastro.');
+                }
+                const created = await res.json();
+                setActiveCustomer({
+                    ...payload,
+                    ...created,
+                    neighborhood: created.neighborhood || neighborhood,
+                    street: created.street || street,
+                    number: created.number || number,
+                    complement: created.complement || complement,
+                    reference: created.reference || reference
+                });
+                e.target.reset();
+                renderCustomerModalView();
+            } catch (err) {
+                if (err.message && !err.message.includes('Failed to fetch')) {
+                    errEl.innerText = err.message;
+                    errEl.classList.remove('hidden');
+                    return;
+                }
+                setActiveCustomer(payload);
+                e.target.reset();
+                renderCustomerModalView();
+            }
+        }
+
+        async function handleCustomerLogin(e) {
+            e.preventDefault();
+            const errEl = document.getElementById('cust-auth-error');
+            errEl.classList.add('hidden');
+            document.getElementById('cust-reset-success').classList.add('hidden');
+
+            const rawPhone = document.getElementById('cust-login-phone').value.trim();
+            const phone = normalizePhone(rawPhone);
+            const password = document.getElementById('cust-login-pass').value;
+
+            const users = JSON.parse(localStorage.getItem(CUSTOMER_USERS_KEY) || '{}');
+            const matchedKey = Object.keys(users).find(k => phonesMatch(k, rawPhone));
+            const localFallback = matchedKey ? users[matchedKey] : {};
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/customers/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password })
+                });
+                if (!res.ok) {
+                    throw new Error('WhatsApp ou senha inválidos.');
+                }
+                const customer = await res.json();
+
+                const mergedCustomer = {
+                    name: customer.name || localFallback.name || '',
+                    phone: customer.phone || phone,
+                    neighborhood: customer.neighborhood || localFallback.neighborhood || '',
+                    street: customer.street || localFallback.street || '',
+                    number: customer.number || localFallback.number || '',
+                    complement: customer.complement || localFallback.complement || '',
+                    reference: customer.reference || localFallback.reference || ''
+                };
+
+                if (mergedCustomer.street || mergedCustomer.neighborhood) {
+                    const existingAddrs = getCustomerAddresses(mergedCustomer.phone);
+                    if (existingAddrs.length === 0) {
+                        setCustomerAddresses(mergedCustomer.phone, [{
+                            id: 'addr_' + Date.now(),
+                            label: 'Casa',
+                            neighborhood: mergedCustomer.neighborhood || (neighborhoodFees[0]?.name || 'Centro'),
+                            street: mergedCustomer.street,
+                            number: mergedCustomer.number,
+                            complement: mergedCustomer.complement,
+                            reference: mergedCustomer.reference,
+                            isDefault: true
+                        }]);
+                    }
+                }
+
+                setActiveCustomer(mergedCustomer);
+                e.target.reset();
+                renderCustomerModalView();
+            } catch (err) {
+                if (localFallback && localFallback.password === password) {
+                    setActiveCustomer({
+                        name: localFallback.name,
+                        phone: localFallback.phone,
+                        neighborhood: localFallback.neighborhood || '',
+                        street: localFallback.street || '',
+                        number: localFallback.number || '',
+                        complement: localFallback.complement || '',
+                        reference: localFallback.reference || ''
+                    });
+                    e.target.reset();
+                    renderCustomerModalView();
+                } else {
+                    errEl.innerText = 'WhatsApp ou senha incorretos.';
+                    errEl.classList.remove('hidden');
+                }
+            }
+        }
+
+        function logoutCustomer() {
+            setActiveCustomer(null);
+            switchCustomerAuthTab('login');
+            renderCustomerModalView();
+        }
+
+        function saveOrderToCustomerHistory(orderPayload) {
+            const cleanPhone = normalizePhone(orderPayload.client_phone);
+            if (!cleanPhone) return;
+
+            const allOrders = JSON.parse(localStorage.getItem(CUSTOMER_ORDERS_KEY) || '{}');
+            if (!allOrders[cleanPhone]) allOrders[cleanPhone] = [];
+
+            allOrders[cleanPhone].unshift({
+                ...orderPayload,
+                client_phone: cleanPhone,
+                created_at: new Date().toLocaleString('pt-BR')
+            });
+
+            localStorage.setItem(CUSTOMER_ORDERS_KEY, JSON.stringify(allOrders));
+        }
+
+        async function loadCustomerOrders(phone) {
+            const listEl = document.getElementById('customer-orders-list');
+            const cleanPhone = normalizePhone(phone);
+            listEl.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Carregando compras...</p>`;
+
+            let orders = [];
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/customers/${encodeURIComponent(cleanPhone)}/orders`);
+                if (!res.ok) throw new Error('API sem histórico');
+                orders = await res.json();
+            } catch (err) {
+                const allOrders = JSON.parse(localStorage.getItem(CUSTOMER_ORDERS_KEY) || '{}');
+                orders = allOrders[cleanPhone] || [];
+            }
+
+            if (!orders.length) {
+                listEl.innerHTML = `<p class="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-2xl border border-slate-100">Nenhuma compra registrada para este número ainda.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = '';
+            orders.forEach((ord) => {
+                const totalNum = Number(ord.total) || 0;
+                const card = document.createElement('div');
+                card.className = 'p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-semibold text-slate-400">${escapeHtml(ord.created_at || 'Pedido recente')}</span>
+                        <span class="text-sm font-extrabold text-brand-600">R$ ${totalNum.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <div class="text-xs text-slate-700 whitespace-pre-line font-medium">${escapeHtml(ord.items || '')}</div>
+                    <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                        <span><i class="fa-solid fa-motorcycle mr-1 text-brand-500"></i>${escapeHtml(ord.delivery_type || '')}</span>
+                        <span><i class="fa-solid fa-credit-card mr-1 text-brand-500"></i>${escapeHtml(ord.payment || '')}</span>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        async function loadBackendData() {
+            const notice = document.getElementById('api-notice');
+            try {
+                const [prodRes, feeRes, settingsRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/api/products`),
+                    fetch(`${API_BASE_URL}/api/delivery-fees`),
+                    fetch(`${API_BASE_URL}/api/settings`)
+                ]);
+
+                if (!prodRes.ok || !feeRes.ok || !settingsRes.ok) {
+                    throw new Error('Falha ao consultar endpoints da API');
+                }
+
+                const productsData = await prodRes.json();
+                const feesData = await feeRes.json();
+                const settingsData = await settingsRes.json();
+
+                menuProducts = productsData.map(p => ({ ...p, addons: p.addons || [] }));
+                neighborhoodFees = feesData;
+                storeSettings = settingsData;
+                notice.classList.add('hidden');
+            } catch (err) {
+                console.warn('API indisponível, usando fallback:', err);
+                menuProducts = fallbackProducts;
+                neighborhoodFees = fallbackFees;
+                notice.classList.remove('hidden');
+            }
+
+            try {
+                const coupRes = await fetch(`${API_BASE_URL}/api/coupons`);
+                if (coupRes.ok) {
+                    couponsList = await coupRes.json();
+                    saveLocalCoupons(couponsList);
+                } else {
+                    couponsList = getLocalCoupons();
+                }
+            } catch (err) {
+                couponsList = getLocalCoupons();
+            }
+
+            if (appliedCoupon) {
+                const updated = couponsList.find(c => normalizeCouponCode(c.code) === normalizeCouponCode(appliedCoupon.code));
+                if (updated) {
+                    appliedCoupon = updated;
+                } else {
+                    appliedCoupon = null;
+                    setCouponFeedback('', '');
+                }
+            }
+
+            applyStoreSettingsUI();
+            renderProducts(currentCategory);
+            renderAllNeighborhoodSelects();
+            const activeCust = getActiveCustomer();
+            if (activeCust) fillCheckoutWithCustomer(activeCust);
+            updateHeaderMinFee();
+            updateCheckoutTotals();
+
+            if (!document.getElementById('admin-modal').classList.contains('hidden')) {
+                renderAdminProductsList();
+                renderAdminFeesList();
+                renderAdminCouponsList();
+                syncAdminStoreForm();
+            }
+        }
+
+        function applyStoreSettingsUI() {
+            const statusBadge = document.getElementById('store-status');
+            const closedBanner = document.getElementById('closed-banner');
+            const closedBannerText = document.getElementById('closed-banner-text');
+            const checkoutBtn = document.getElementById('btn-checkout-whatsapp');
+            const checkoutText = document.getElementById('btn-checkout-text');
+            const safeHours = escapeHtml(storeSettings.opening_hours);
+
+            if (storeSettings.is_open) {
+                statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Aberto agora (${safeHours})`;
+                closedBanner.classList.add('hidden');
+
+                checkoutBtn.disabled = false;
+                checkoutBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all active:scale-[0.98]";
+                checkoutText.innerText = "Finalizar Pedido";
+            } else {
+                statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium bg-red-500/20 text-red-400 border border-red-500/30";
+                statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-400"></span> Fechado (${safeHours})`;
+                closedBannerText.innerText = `No momento estamos fechados. Horário de atendimento: ${storeSettings.opening_hours}.`;
+                closedBanner.classList.remove('hidden');
+
+                checkoutBtn.disabled = true;
+                checkoutBtn.className = "w-full bg-slate-400 cursor-not-allowed text-white font-bold py-4 px-6 rounded-2xl flex items-center justify-center gap-3";
+                checkoutText.innerText = "Restaurante Fechado no Momento";
+            }
+        }
+
+        function updateHeaderMinFee() {
+            const label = document.getElementById('header-min-fee');
+            if (neighborhoodFees.length > 0) {
+                const minFee = Math.min(...neighborhoodFees.map(b => Number(b.fee) || 0));
+                label.innerText = `Entrega a partir de R$ ${minFee.toFixed(2).replace('.', ',')}`;
+            } else {
+                label.innerText = 'Consulte taxa de entrega';
+            }
+        }
+
+        function renderNeighborhoodSelect() {
+            const select = document.getElementById('client-neighborhood');
+            if (!select) return;
+            const previousName = select.options[select.selectedIndex]?.dataset?.name || '';
+            select.innerHTML = '';
+
+            if (neighborhoodFees.length === 0) {
+                select.innerHTML = `<option value="0" data-name="Não informado">Taxa padrão (R$ 0,00)</option>`;
+                return;
+            }
+
+            neighborhoodFees.forEach(item => {
+                const feeNum = Number(item.fee) || 0;
+                const option = document.createElement('option');
+                option.value = feeNum;
+                option.dataset.name = item.name;
+                option.textContent = `${item.name} — R$ ${feeNum.toFixed(2).replace('.', ',')}`;
+                select.appendChild(option);
+            });
+
+            if (previousName) {
+                const match = Array.from(select.options).find(opt => opt.dataset.name === previousName);
+                if (match) select.value = match.value;
+            }
+        }
+
+        function getSelectedDeliveryFee() {
+            if (deliveryType !== 'delivery') return 0;
+            const select = document.getElementById('client-neighborhood');
+            if (!select || !select.value) return 0;
+            return parseFloat(select.value) || 0;
+        }
+
+        function setCouponFeedback(message, type = '') {
+            const el = document.getElementById('coupon-feedback');
+            const clearBtn = document.getElementById('btn-clear-coupon');
+            if (!el) return;
+
+            if (!message) {
+                el.classList.add('hidden');
+                el.innerText = '';
+                if (clearBtn && !appliedCoupon) clearBtn.classList.add('hidden');
+                return;
+            }
+
+            el.classList.remove('hidden');
+            el.innerText = message;
+            if (type === 'success') {
+                el.className = 'mt-1.5 text-xs font-semibold text-emerald-600';
+                if (clearBtn) clearBtn.classList.remove('hidden');
+            } else if (type === 'error') {
+                el.className = 'mt-1.5 text-xs font-medium text-red-600';
+            } else {
+                el.className = 'mt-1.5 text-xs font-medium text-slate-500';
+            }
+        }
+
+        function applyCouponCode() {
+            const input = document.getElementById('coupon-input');
+            const code = normalizeCouponCode(input?.value);
+
+            if (!code) {
+                appliedCoupon = null;
+                setCouponFeedback('Digite um código de cupom ou deixe em branco (opcional).', 'info');
+                updateCheckoutTotals();
+                return;
+            }
+
+            const found = couponsList.find(c => normalizeCouponCode(c.code) === code);
+            if (!found) {
+                appliedCoupon = null;
+                setCouponFeedback('Cupom não encontrado ou inválido.', 'error');
+                updateCheckoutTotals();
+                return;
+            }
+
+            const subtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+            const minOrder = Number(found.min_order) || 0;
+            if (minOrder > 0 && subtotal < minOrder) {
+                appliedCoupon = null;
+                setCouponFeedback(`Este cupom exige pedido mínimo de R$ ${minOrder.toFixed(2).replace('.', ',')}.`, 'error');
+                updateCheckoutTotals();
+                return;
+            }
+
+            appliedCoupon = found;
+            const descText = found.discount_type === 'percent'
+                ? `${Number(found.discount_value)}% de desconto`
+                : `R$ ${Number(found.discount_value).toFixed(2).replace('.', ',')} de desconto`;
+            setCouponFeedback(`Cupom ${normalizeCouponCode(found.code)} aplicado (${descText})!`, 'success');
+            updateCheckoutTotals();
+        }
+
+        function clearCoupon(focusInput = false) {
+            appliedCoupon = null;
+            const input = document.getElementById('coupon-input');
+            const clearBtn = document.getElementById('btn-clear-coupon');
+            if (input) input.value = '';
+            if (clearBtn) clearBtn.classList.add('hidden');
+            setCouponFeedback('', '');
+            if (focusInput && input) input.focus();
+            updateCheckoutTotals();
+        }
+
+        function calculateDiscount(subtotal) {
+            if (!appliedCoupon || subtotal <= 0) return 0;
+
+            const minOrder = Number(appliedCoupon.min_order) || 0;
+            if (minOrder > 0 && subtotal < minOrder) {
+                return 0;
+            }
+
+            const val = Number(appliedCoupon.discount_value) || 0;
+            if (val <= 0) return 0;
+
+            let discount = 0;
+            if (appliedCoupon.discount_type === 'percent') {
+                discount = subtotal * (val / 100);
+            } else {
+                discount = val;
+            }
+
+            return Math.min(discount, subtotal);
+        }
+
+        async function addNewCoupon(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-coupon');
+            const code = normalizeCouponCode(document.getElementById('new-coupon-code').value);
+            const discountType = document.getElementById('new-coupon-type').value;
+            const discountValue = parseFloat(document.getElementById('new-coupon-value').value);
+            const minOrderRaw = parseFloat(document.getElementById('new-coupon-min').value);
+            const minOrder = Number.isNaN(minOrderRaw) ? 0 : Math.max(0, minOrderRaw);
+            const description = document.getElementById('new-coupon-desc').value.trim();
+
+            if (!code || Number.isNaN(discountValue) || discountValue <= 0) return;
+
+            btn.disabled = true;
+            btn.innerText = 'Salvando...';
+
+            const payload = {
+                code,
+                discount_type: discountType,
+                discount_value: discountValue,
+                min_order: minOrder,
+                description
+            };
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/coupons`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Falha na API');
+                const created = await res.json();
+                couponsList.push(created);
+            } catch (err) {
+                const existingIdx = couponsList.findIndex(c => normalizeCouponCode(c.code) === code);
+                const localItem = { id: Date.now(), ...payload };
+                if (existingIdx >= 0) couponsList[existingIdx] = localItem;
+                else couponsList.push(localItem);
+            }
+
+            saveLocalCoupons(couponsList);
+            e.target.reset();
+            renderAdminCouponsList();
+            btn.disabled = false;
+            btn.innerText = 'Salvar Cupom / Promoção';
+        }
+
+        async function deleteCoupon(id) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/coupons/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok && res.status !== 404) {
+                    throw new Error('Erro ao excluir cupom');
+                }
+            } catch (err) {
+                console.warn('Removendo cupom localmente:', err);
+            }
+
+            couponsList = couponsList.filter(c => String(c.id) !== String(id));
+            saveLocalCoupons(couponsList);
+
+            if (appliedCoupon && String(appliedCoupon.id) === String(id)) {
+                clearCoupon(false);
+            }
+
+            renderAdminCouponsList();
+        }
+
+        function renderAdminCouponsList() {
+            const list = document.getElementById('admin-coupons-list');
+            document.getElementById('admin-coupon-count').innerText = couponsList.length;
+            list.innerHTML = '';
+
+            if (couponsList.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">Nenhum cupom ou promoção cadastrada.</p>`;
+                return;
+            }
+
+            couponsList.forEach(c => {
+                const valNum = Number(c.discount_value) || 0;
+                const minNum = Number(c.min_order) || 0;
+                const badgeText = c.discount_type === 'percent'
+                    ? `${valNum}% OFF`
+                    : `R$ ${valNum.toFixed(2).replace('.', ',')} OFF`;
+
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl gap-3";
+                row.innerHTML = `
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-extrabold text-sm text-slate-900">${escapeHtml(normalizeCouponCode(c.code))}</span>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">${escapeHtml(badgeText)}</span>
+                            ${minNum > 0 ? `<span class="text-[11px] text-slate-500">Mín: R$ ${minNum.toFixed(2).replace('.', ',')}</span>` : ''}
+                        </div>
+                        ${c.description ? `<p class="text-xs text-slate-500 mt-0.5 truncate">${escapeHtml(c.description)}</p>` : ''}
+                    </div>
+                    <button onclick="deleteCoupon('${escapeHtml(c.id)}')" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 transition-colors" title="Remover cupom">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function checkAdminSession() {
+            const isLogged = sessionStorage.getItem('lanchonete_admin_logged') === 'true';
+            document.getElementById('admin-footer-label').innerText = isLogged ? 'Abrir Painel do Restaurante' : 'Área do Restaurante';
+        }
+
+        function openAdminAccess() {
+            const isLogged = sessionStorage.getItem('lanchonete_admin_logged') === 'true';
+            if (isLogged) {
+                openAdminModal();
+            } else {
+                toggleLoginRecoveryView('login');
+                document.getElementById('login-error').classList.add('hidden');
+                document.getElementById('login-success-msg').classList.add('hidden');
+                document.getElementById('login-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+        }
+
+        function toggleLoginRecoveryView(view) {
+            const loginForm = document.getElementById('admin-login-form');
+            const recoverBox = document.getElementById('admin-recover-box');
+            const title = document.getElementById('login-modal-title');
+            const subtitle = document.getElementById('login-modal-subtitle');
+            const icon = document.getElementById('login-modal-icon');
+
+            document.getElementById('login-error').classList.add('hidden');
+            showFeedbackBox(document.getElementById('recover-feedback'), '');
+
+            if (view === 'recover') {
+                loginForm.classList.add('hidden');
+                recoverBox.classList.remove('hidden');
+                document.getElementById('admin-confirm-reset-form').classList.add('hidden');
+                const currentAdminUser = document.getElementById('admin-user').value.trim();
+                if (currentAdminUser) {
+                    document.getElementById('recover-admin-user').value = currentAdminUser;
+                }
+                title.innerText = 'Recuperar Senha';
+                subtitle.innerText = 'Código de confirmação no WhatsApp';
+                icon.className = 'fa-brands fa-whatsapp text-sm';
+            } else {
+                recoverBox.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                title.innerText = 'Acesso Restrito';
+                subtitle.innerText = 'Painel do Restaurante';
+                icon.className = 'fa-solid fa-store text-sm';
+            }
+        }
+
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-login');
+            const errorEl = document.getElementById('login-error');
+            const user = document.getElementById('admin-user').value.trim();
+            const pass = document.getElementById('admin-pass').value.trim();
+
+            errorEl.classList.add('hidden');
+            document.getElementById('login-success-msg').classList.add('hidden');
+            btn.disabled = true;
+            btn.innerText = 'Verificando...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                if (res.status === 401) {
+                    errorEl.innerText = 'Usuário ou senha incorretos.';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+                if (!res.ok) throw new Error('Erro de servidor');
+
+                sessionStorage.setItem('lanchonete_admin_logged', 'true');
+                sessionStorage.setItem('lanchonete_admin_user', user);
+                checkAdminSession();
+                closeLoginModal();
+                openAdminModal();
+            } catch (err) {
+                const fb = getFallbackCredentials();
+                if (user === fb.user && pass === fb.pass) {
+                    sessionStorage.setItem('lanchonete_admin_logged', 'true');
+                    sessionStorage.setItem('lanchonete_admin_user', user);
+                    checkAdminSession();
+                    closeLoginModal();
+                    openAdminModal();
+                } else {
+                    errorEl.innerText = 'Usuário ou senha incorretos.';
+                    errorEl.classList.remove('hidden');
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Entrar no Painel';
+            }
+        }
+
+        async function handleAdminSendResetCode(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-admin-send-code');
+            const feedback = document.getElementById('recover-feedback');
+            const confirmForm = document.getElementById('admin-confirm-reset-form');
+            const username = document.getElementById('recover-admin-user').value.trim();
+            const rawPhone = document.getElementById('recover-whatsapp').value.trim();
+            const cleanPhone = normalizePhone(rawPhone);
+
+            if (cleanPhone.length < 12) {
+                showFeedbackBox(feedback, 'Informe um número de WhatsApp válido com DDD.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Enviando código...';
+            showFeedbackBox(feedback, '');
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scope: 'admin',
+                        username,
+                        phone: cleanPhone
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Não foi possível enviar o código.');
+                }
+
+                pendingResetState.admin = { phone: cleanPhone, username };
+                confirmForm.classList.remove('hidden');
+                const extra = data.dev_code ? ` (Código de teste: ${data.dev_code})` : '';
+                showFeedbackBox(
+                    feedback,
+                    `Código enviado para o WhatsApp ${cleanPhone}. Digite-o abaixo para trocar a senha.${extra}`,
+                    'success'
+                );
+            } catch (err) {
+                if (err.message && !err.message.includes('Failed to fetch')) {
+                    showFeedbackBox(feedback, err.message, 'error');
+                } else {
+                    const fb = getFallbackCredentials();
+                    if (username !== fb.user) {
+                        showFeedbackBox(feedback, 'Usuário administrativo não encontrado.', 'error');
+                    } else {
+                        const devCode = createLocalResetCode('admin', cleanPhone, username);
+                        pendingResetState.admin = { phone: cleanPhone, username };
+                        confirmForm.classList.remove('hidden');
+                        showFeedbackBox(
+                            feedback,
+                            `Código enviado para o WhatsApp (modo offline — código de teste: ${devCode}).`,
+                            'success'
+                        );
+                    }
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Enviar Código pelo WhatsApp';
+            }
+        }
+
+        async function handleAdminConfirmReset(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-submit-recover');
+            const feedback = document.getElementById('recover-feedback');
+            const phone = pendingResetState.admin.phone || normalizePhone(document.getElementById('recover-whatsapp').value);
+            const username = pendingResetState.admin.username || document.getElementById('recover-admin-user').value.trim();
+            const code = document.getElementById('recover-code-input').value.trim();
+            const newPassword = document.getElementById('recover-new-pass').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = 'Confirmando...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scope: 'admin',
+                        username,
+                        phone,
+                        code,
+                        new_password: newPassword
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Código inválido ou expirado.');
+                }
+
+                document.getElementById('admin-send-code-form').reset();
+                e.target.reset();
+                toggleLoginRecoveryView('login');
+                document.getElementById('admin-user').value = username;
+                const okEl = document.getElementById('login-success-msg');
+                okEl.innerText = data.message || 'Senha alterada com sucesso! Entre com sua nova senha.';
+                okEl.classList.remove('hidden');
+            } catch (err) {
+                if (err.message && !err.message.includes('Failed to fetch')) {
+                    showFeedbackBox(feedback, err.message, 'error');
+                } else {
+                    const check = verifyLocalResetCode('admin', phone, code);
+                    if (!check.ok) {
+                        showFeedbackBox(feedback, check.reason, 'error');
+                    } else {
+                        const fb = getFallbackCredentials();
+                        localStorage.setItem('lanchonete_fallback_creds', JSON.stringify({
+                            ...fb,
+                            user: username || fb.user,
+                            pass: newPassword,
+                            whatsapp: phone
+                        }));
+                        document.getElementById('admin-send-code-form').reset();
+                        e.target.reset();
+                        toggleLoginRecoveryView('login');
+                        document.getElementById('admin-user').value = username || fb.user;
+                        const okEl = document.getElementById('login-success-msg');
+                        okEl.innerText = 'Senha alterada com sucesso! Entre com sua nova senha.';
+                        okEl.classList.remove('hidden');
+                    }
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Confirmar Código e Trocar Senha';
+            }
+        }
+
+        async function updateAdminCredentials(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-credentials');
+            const newUsername = document.getElementById('sec-new-user').value.trim();
+            const newPassword = document.getElementById('sec-new-pass').value.trim();
+            const newWhatsapp = normalizePhone(document.getElementById('sec-new-whatsapp').value);
+
+            btn.disabled = true;
+            btn.innerText = 'Salvando...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/credentials`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        new_username: newUsername,
+                        new_password: newPassword,
+                        new_whatsapp: newWhatsapp
+                    })
+                });
+
+                if (!res.ok) throw new Error('Falha ao atualizar credenciais na API');
+
+                localStorage.setItem('lanchonete_fallback_creds', JSON.stringify({
+                    user: newUsername,
+                    pass: newPassword,
+                    whatsapp: newWhatsapp
+                }));
+                sessionStorage.setItem('lanchonete_admin_user', newUsername);
+                e.target.reset();
+                alert('Usuário, senha e WhatsApp de recuperação atualizados com sucesso!');
+            } catch (err) {
+                alert(`Não foi possível salvar no servidor: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Salvar Novas Credenciais';
+            }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('lanchonete_admin_logged');
+            checkAdminSession();
+            closeAdminModal();
+        }
+
+        function openAdminModal() {
+            renderAdminProductsList();
+            renderAdminFeesList();
+            renderAdminCouponsList();
+            syncAdminStoreForm();
+            document.getElementById('sec-new-user').value = sessionStorage.getItem('lanchonete_admin_user') || 'admin';
+            document.getElementById('admin-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function switchAdminTab(tab) {
+            const tabs = {
+                products: { btn: document.getElementById('tab-admin-products'), sec: document.getElementById('admin-section-products') },
+                fees: { btn: document.getElementById('tab-admin-fees'), sec: document.getElementById('admin-section-fees') },
+                promotions: { btn: document.getElementById('tab-admin-promotions'), sec: document.getElementById('admin-section-promotions') },
+                store: { btn: document.getElementById('tab-admin-store'), sec: document.getElementById('admin-section-store') },
+                security: { btn: document.getElementById('tab-admin-security'), sec: document.getElementById('admin-section-security') }
+            };
+
+            Object.entries(tabs).forEach(([key, el]) => {
+                if (key === tab) {
+                    el.btn.className = "px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl border-t border-x border-slate-200 bg-white text-brand-600 -mb-px whitespace-nowrap";
+                    el.sec.classList.remove('hidden');
+                } else {
+                    el.btn.className = "px-4 py-2.5 text-xs sm:text-sm font-semibold rounded-t-xl text-slate-500 hover:text-slate-800 whitespace-nowrap";
+                    el.sec.classList.add('hidden');
+                }
+            });
+
+            if (tab === 'store') syncAdminStoreForm();
+            if (tab === 'promotions') renderAdminCouponsList();
+        }
+
+        function syncAdminStoreForm() {
+            selectAdminStoreStatus(Boolean(storeSettings.is_open));
+            document.getElementById('admin-opening-hours').value = storeSettings.opening_hours || '';
+        }
+
+        function selectAdminStoreStatus(isOpen) {
+            adminDraftIsOpen = isOpen;
+            const btnOpen = document.getElementById('btn-status-open');
+            const btnClosed = document.getElementById('btn-status-closed');
+
+            if (isOpen) {
+                btnOpen.className = "p-3.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center gap-2 transition-all";
+                btnClosed.className = "p-3.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all";
+            } else {
+                btnClosed.className = "p-3.5 rounded-xl border-2 border-red-500 bg-red-50 text-red-700 font-bold text-sm flex items-center justify-center gap-2 transition-all";
+                btnOpen.className = "p-3.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 font-semibold text-sm flex items-center justify-center gap-2 transition-all";
+            }
+        }
+
+        async function saveStoreSettings(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-settings');
+            const openingHours = document.getElementById('admin-opening-hours').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = 'Salvando...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/settings`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        is_open: adminDraftIsOpen,
+                        opening_hours: openingHours
+                    })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || 'Erro ao salvar configurações da loja');
+                }
+
+                storeSettings = await res.json();
+                applyStoreSettingsUI();
+                alert('Status e horário de funcionamento atualizados com sucesso!');
+            } catch (err) {
+                alert(`Não foi possível salvar: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Salvar Status e Horário';
+            }
+        }
+
+        async function addNewProduct(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-product');
+            const name = document.getElementById('new-prod-name').value.trim();
+            const price = parseFloat(document.getElementById('new-prod-price').value);
+            const category = document.getElementById('new-prod-category').value;
+            const description = document.getElementById('new-prod-desc').value.trim();
+            const urlInput = document.getElementById('new-prod-img-url').value.trim();
+            const fileInput = document.getElementById('new-prod-img-file').files[0];
+
+            const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            btn.disabled = true;
+            btn.innerText = 'Salvando...';
+
+            try {
+                let imageUrl = urlInput;
+                if (fileInput) {
+                    imageUrl = await readFileAsDataUrl(fileInput);
+                }
+                if (!imageUrl) {
+                    imageUrl = `https://placehold.co/600x400/f43f5e/ffffff?text=${encodeURIComponent(name)}`;
+                }
+
+                const res = await fetch(`${API_BASE_URL}/api/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category, name, description, price, image: imageUrl })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || 'Erro ao salvar produto na API');
+                }
+
+                e.target.reset();
+                filterCategory(category);
+                await loadBackendData();
+                alert('Produto salvo no banco de dados com sucesso!');
+            } catch (err) {
+                alert(`Não foi possível salvar o produto: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Salvar Item no Cardápio';
+            }
+        }
+
+        async function deleteProduct(id) {
+            if (!confirm('Deseja realmente remover este item do cardápio?')) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok && res.status !== 404) {
+                    throw new Error('Erro ao excluir produto');
+                }
+                await loadBackendData();
+            } catch (err) {
+                alert(`Falha ao excluir produto: ${err.message}`);
+            }
+        }
+
+        function renderAdminProductsList() {
+            const list = document.getElementById('admin-products-list');
+            document.getElementById('admin-prod-count').innerText = menuProducts.length;
+            list.innerHTML = '';
+
+            menuProducts.forEach(p => {
+                const priceNum = Number(p.price) || 0;
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl gap-3";
+                row.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" class="w-12 h-12 rounded-lg object-cover bg-slate-100 flex-shrink-0">
+                        <div class="min-w-0">
+                            <p class="font-bold text-xs sm:text-sm text-slate-900 truncate">${escapeHtml(p.name)}</p>
+                            <p class="text-[11px] text-slate-400 uppercase">${escapeHtml(p.category)} • <span class="text-brand-600 font-bold">R$ ${priceNum.toFixed(2).replace('.', ',')}</span></p>
+                        </div>
+                    </div>
+                    <button onclick="deleteProduct(${Number(p.id)})" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 transition-colors" title="Excluir item">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        async function addNewNeighborhoodFee(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-fee');
+            const name = document.getElementById('new-fee-name').value.trim();
+            const fee = parseFloat(document.getElementById('new-fee-price').value);
+
+            btn.disabled = true;
+            btn.innerText = 'Salvando...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/delivery-fees`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, fee })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || 'Erro ao salvar taxa do bairro');
+                }
+
+                e.target.reset();
+                await loadBackendData();
+            } catch (err) {
+                alert(`Não foi possível salvar a taxa: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Salvar Taxa do Bairro';
+            }
+        }
+
+        async function deleteNeighborhoodFee(id) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/delivery-fees/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!res.ok && res.status !== 404) {
+                    throw new Error('Erro ao remover bairro');
+                }
+                await loadBackendData();
+            } catch (err) {
+                alert(`Falha ao remover bairro: ${err.message}`);
+            }
+        }
+
+        function renderAdminFeesList() {
+            const list = document.getElementById('admin-fees-list');
+            document.getElementById('admin-fee-count').innerText = neighborhoodFees.length;
+            list.innerHTML = '';
+
+            if (neighborhoodFees.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">Nenhum bairro cadastrado.</p>`;
+                return;
+            }
+
+            neighborhoodFees.forEach(b => {
+                const feeNum = Number(b.fee) || 0;
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl";
+                row.innerHTML = `
+                    <div>
+                        <span class="font-bold text-sm text-slate-800">${escapeHtml(b.name)}</span>
+                        <span class="ml-2 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">R$ ${feeNum.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <button onclick="deleteNeighborhoodFee(${Number(b.id)})" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors" title="Remover bairro">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function filterCategory(category) {
+            currentCategory = category;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if(btn.dataset.category === category) {
+                    btn.className = "cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-brand-500 text-white shadow-sm shadow-brand-500/30";
+                } else {
+                    btn.className = "cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+            document.getElementById('search-input').value = '';
+            renderProducts(category);
+        }
+
+        function renderProducts(category, searchTerm = '') {
+            const container = document.getElementById('products-container');
+            const noResults = document.getElementById('no-results');
+            container.innerHTML = '';
+
+            let filtered = menuProducts.filter(p => p.category === category);
+
+            if(searchTerm.trim() !== '') {
+                const term = searchTerm.toLowerCase();
+                filtered = menuProducts.filter(p => p.name.toLowerCase().includes(term) || p.description.toLowerCase().includes(term));
+            }
+
+            if(filtered.length === 0) {
+                noResults.classList.remove('hidden');
+                return;
+            } else {
+                noResults.classList.add('hidden');
+            }
+
+            filtered.forEach(product => {
+                const priceNum = Number(product.price) || 0;
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex gap-4 items-center cursor-pointer group";
+                card.onclick = () => openProductModal(product.id);
+
+                card.innerHTML = `
+                    <div class="flex-grow">
+                        <h3 class="font-bold text-slate-900 group-hover:text-brand-600 transition-colors">${escapeHtml(product.name)}</h3>
+                        <p class="text-slate-500 text-xs mt-1 line-clamp-2 leading-relaxed">${escapeHtml(product.description)}</p>
+                        <div class="mt-3 flex items-center justify-between">
+                            <span class="font-extrabold text-brand-600 text-sm">R$ ${priceNum.toFixed(2).replace('.', ',')}</span>
+                            <span class="w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-xs group-hover:bg-brand-500 group-hover:text-white transition-all shadow-sm">
+                                <i class="fa-solid fa-plus"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 border border-slate-100">
+                        <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function searchProducts(term) {
+            if(term.trim() === '') {
+                renderProducts(currentCategory);
+                return;
+            }
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn px-4 py-2 rounded-full text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200";
+            });
+            renderProducts('', term);
+        }
+
+        function openProductModal(productId) {
+            currentSelectedProduct = menuProducts.find(p => p.id === productId);
+            if(!currentSelectedProduct) return;
+
+            modalQty = 1;
+            selectedAddons = {};
+            document.getElementById('modal-qty').innerText = modalQty;
+            document.getElementById('modal-obs').value = '';
+
+            document.getElementById('modal-img').src = currentSelectedProduct.image;
+            document.getElementById('modal-title').innerText = currentSelectedProduct.name;
+            document.getElementById('modal-desc').innerText = currentSelectedProduct.description;
+            document.getElementById('modal-price').innerText = `R$ ${(Number(currentSelectedProduct.price) || 0).toFixed(2).replace('.', ',')}`;
+
+            const addonsSection = document.getElementById('options-section');
+            const addonsList = document.getElementById('addons-list');
+            addonsList.innerHTML = '';
+
+            if(currentSelectedProduct.addons && currentSelectedProduct.addons.length > 0) {
+                addonsSection.classList.remove('hidden');
+                currentSelectedProduct.addons.forEach(addon => {
+                    const item = document.createElement('label');
+                    item.className = "flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-all";
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" onchange="toggleAddon('${escapeHtml(addon.id)}', ${Number(addon.price) || 0})" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500">
+                            <span class="text-xs font-semibold text-slate-700">${escapeHtml(addon.name)}</span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-500">+ R$ ${Number(addon.price).toFixed(2).replace('.', ',')}</span>
+                    `;
+                    addonsList.appendChild(item);
+                });
+            } else {
+                addonsSection.classList.add('hidden');
+            }
+
+            updateModalTotal();
+            document.getElementById('custom-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function adjustModalQty(change) {
+            modalQty += change;
+            if(modalQty < 1) modalQty = 1;
+            document.getElementById('modal-qty').innerText = modalQty;
+            updateModalTotal();
+        }
+
+        function toggleAddon(addonId, price) {
+            if(selectedAddons[addonId]) {
+                delete selectedAddons[addonId];
+            } else {
+                selectedAddons[addonId] = Number(price) || 0;
+            }
+            updateModalTotal();
+        }
+
+        function updateModalTotal() {
+            let addonsTotal = Object.values(selectedAddons).reduce((acc, val) => acc + val, 0);
+            let unitPrice = (Number(currentSelectedProduct.price) || 0) + addonsTotal;
+            let total = unitPrice * modalQty;
+            document.getElementById('modal-total-btn').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        function confirmAddToCart() {
+            let addonsTotal = Object.values(selectedAddons).reduce((acc, val) => acc + val, 0);
+            let unitPrice = (Number(currentSelectedProduct.price) || 0) + addonsTotal;
+            
+            let activeAddonsNames = [];
+            if(currentSelectedProduct.addons) {
+                currentSelectedProduct.addons.forEach(a => {
+                    if(selectedAddons[a.id]) activeAddonsNames.push(a.name);
+                });
+            }
+
+            const cartItem = {
+                cartId: Date.now() + Math.random(),
+                productId: currentSelectedProduct.id,
+                name: currentSelectedProduct.name,
+                unitPrice: unitPrice,
+                basePrice: Number(currentSelectedProduct.price) || 0,
+                quantity: modalQty,
+                addons: activeAddonsNames,
+                observation: document.getElementById('modal-obs').value.trim()
+            };
+
+            cart.push(cartItem);
+            closeModal();
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const floatingCart = document.getElementById('floating-cart');
+            const cartBadge = document.getElementById('cart-badge');
+            const cartTotalFooter = document.getElementById('cart-total-footer');
+
+            let totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+            let subtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+
+            cartBadge.innerText = totalItems;
+            cartTotalFooter.innerText = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+
+            if(totalItems > 0) {
+                floatingCart.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+            } else {
+                floatingCart.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function openCartModal() {
+            renderCartItems();
+            renderAllNeighborhoodSelects();
+            const activeCust = getActiveCustomer();
+            if (activeCust) {
+                fillCheckoutWithCustomer(activeCust);
+            }
+            updateCheckoutTotals();
+            document.getElementById('cart-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCartModal() {
+            document.getElementById('cart-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function renderCartItems() {
+            const list = document.getElementById('cart-items-list');
+            list.innerHTML = '';
+
+            if(cart.length === 0) {
+                list.innerHTML = `<p class="text-center text-sm text-slate-400 py-6">Seu carrinho está vazio.</p>`;
+                return;
+            }
+
+            cart.forEach((item, index) => {
+                let addonsText = item.addons.length > 0 ? `<div class="text-xs text-slate-400 mt-0.5">+ ${escapeHtml(item.addons.join(', '))}</div>` : '';
+                let obsText = item.observation ? `<div class="text-xs italic text-brand-600 mt-0.5">Obs: "${escapeHtml(item.observation)}"</div>` : '';
+
+                const div = document.createElement('div');
+                div.className = "py-3 flex items-start justify-between gap-3";
+                div.innerHTML = `
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-sm text-slate-900">${escapeHtml(item.name)}</h4>
+                        ${addonsText}
+                        ${obsText}
+                        <div class="font-bold text-xs text-brand-600 mt-1">R$ ${(item.unitPrice * item.quantity).toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="flex items-center gap-2 bg-slate-100 rounded-lg p-1 flex-shrink-0">
+                        <button onclick="changeCartQty(${index}, -1)" class="w-6 h-6 bg-white rounded flex items-center justify-center text-slate-600 hover:bg-slate-200 text-xs shadow-sm"><i class="fa-solid fa-minus"></i></button>
+                        <span class="text-xs font-bold w-4 text-center">${item.quantity}</span>
+                        <button onclick="changeCartQty(${index}, 1)" class="w-6 h-6 bg-white rounded flex items-center justify-center text-slate-600 hover:bg-slate-200 text-xs shadow-sm"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function changeCartQty(index, change) {
+            cart[index].quantity += change;
+            if(cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            renderCartItems();
+            updateCartUI();
+            updateCheckoutTotals();
+            if(cart.length === 0) {
+                closeCartModal();
+            }
+        }
+
+        function setDeliveryType(type) {
+            deliveryType = type;
+            const deliveryOpt = document.getElementById('delivery-option');
+            const pickupOpt = document.getElementById('pickup-option');
+            const addressFields = document.getElementById('address-fields');
+            const deliveryFeeRow = document.getElementById('delivery-fee-row');
+
+            if(type === 'delivery') {
+                deliveryOpt.className = "flex items-center justify-center gap-2 p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl cursor-pointer text-sm font-semibold text-brand-700 transition-all";
+                pickupOpt.className = "flex items-center justify-center gap-2 p-3 border-2 border-slate-200 bg-white rounded-xl cursor-pointer text-sm font-semibold text-slate-600 transition-all";
+                addressFields.classList.remove('hidden');
+                deliveryFeeRow.classList.remove('hidden');
+            } else {
+                pickupOpt.className = "flex items-center justify-center gap-2 p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl cursor-pointer text-sm font-semibold text-brand-700 transition-all";
+                deliveryOpt.className = "flex items-center justify-center gap-2 p-3 border-2 border-slate-200 bg-white rounded-xl cursor-pointer text-sm font-semibold text-slate-600 transition-all";
+                addressFields.classList.add('hidden');
+                deliveryFeeRow.classList.add('hidden');
+            }
+            updateCheckoutTotals();
+        }
+
+        function setPaymentMethod(method) {
+            paymentMethod = method;
+            
+            ['Pix', 'Cartão', 'Dinheiro'].forEach(m => {
+                const btnId = m === 'Pix' ? 'pay-pix' : (m === 'Cartão' ? 'pay-card' : 'pay-cash');
+                const btn = document.getElementById(btnId);
+                if(!btn) return;
+                
+                if(m === method) {
+                    btn.className = "pay-btn p-3 border-2 border-brand-500 bg-brand-50/50 rounded-xl text-xs font-bold text-brand-700 flex flex-col items-center justify-center gap-1 transition-all";
+                } else {
+                    btn.className = "pay-btn p-3 border-2 border-slate-200 bg-white rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center justify-center gap-1 transition-all";
+                }
+            });
+
+            const cardContainer = document.getElementById('card-type-container');
+            if(method === 'Cartão') {
+                cardContainer.classList.remove('hidden');
+            } else {
+                cardContainer.classList.add('hidden');
+            }
+
+            const changeContainer = document.getElementById('change-container');
+            if(method === 'Dinheiro') {
+                changeContainer.classList.remove('hidden');
+            } else {
+                changeContainer.classList.add('hidden');
+            }
+        }
+
+        function setCardSubtype(subtype) {
+            cardSubtype = subtype;
+            const btnCredito = document.getElementById('card-credito');
+            const btnDebito = document.getElementById('card-debito');
+
+            if(subtype === 'Crédito') {
+                btnCredito.className = "p-2 border-2 border-brand-500 bg-brand-50 rounded-lg text-xs font-bold text-brand-700 transition-all";
+                btnDebito.className = "p-2 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-600 transition-all";
+            } else {
+                btnDebito.className = "p-2 border-2 border-brand-500 bg-brand-50 rounded-lg text-xs font-bold text-brand-700 transition-all";
+                btnCredito.className = "p-2 border border-slate-200 bg-white rounded-lg text-xs font-semibold text-slate-600 transition-all";
+            }
+        }
+
+        function updateCheckoutTotals() {
+            const subtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+            const currentFee = getSelectedDeliveryFee();
+            const discount = calculateDiscount(subtotal);
+            const total = Math.max(0, subtotal - discount) + currentFee;
+
+            document.getElementById('cart-subtotal').innerText = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+
+            const discountRow = document.getElementById('discount-row');
+            const discountLabel = document.getElementById('discount-label');
+            const discountEl = document.getElementById('cart-discount');
+            if (discount > 0 && appliedCoupon) {
+                discountRow.classList.remove('hidden');
+                discountRow.classList.add('flex');
+                discountLabel.innerText = `Desconto (${normalizeCouponCode(appliedCoupon.code)})`;
+                discountEl.innerText = `- R$ ${discount.toFixed(2).replace('.', ',')}`;
+            } else {
+                discountRow.classList.add('hidden');
+                discountRow.classList.remove('flex');
+            }
+
+            document.getElementById('cart-delivery-fee').innerText = `R$ ${currentFee.toFixed(2).replace('.', ',')}`;
+            document.getElementById('cart-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        async function checkoutOrder() {
+            if (!storeSettings.is_open) {
+                alert(`O restaurante está fechado no momento. Nosso horário de atendimento é: ${storeSettings.opening_hours}.`);
+                return;
+            }
+
+            if (!cart || cart.length === 0) {
+                alert('Adicione pelo menos um item ao carrinho antes de finalizar.');
+                return;
+            }
+
+            const clientName = document.getElementById('client-name').value.trim();
+            const clientPhone = document.getElementById('client-phone').value.trim();
+
+            if(!clientName || !clientPhone) {
+                alert('Por favor, preencha o seu Nome e o número de Celular.');
+                if(!clientName) document.getElementById('client-name').focus();
+                else document.getElementById('client-phone').focus();
+                return;
+            }
+
+            let addressStr = '';
+            let complement = '';
+            let reference = '';
+            let currentFee = 0;
+
+            if(deliveryType === 'delivery') {
+                const street = document.getElementById('client-street').value.trim();
+                const number = document.getElementById('client-number').value.trim();
+                complement = document.getElementById('client-complement').value.trim();
+                reference = document.getElementById('client-reference').value.trim();
+                const neighborhoodSelect = document.getElementById('client-neighborhood');
+                const selectedOption = neighborhoodSelect.options[neighborhoodSelect.selectedIndex];
+                const neighborhoodName = selectedOption ? selectedOption.dataset.name : '';
+
+                if(!street || !number || !neighborhoodName) {
+                    alert('Por favor, preencha o endereço completo (Bairro, Rua e Número).');
+                    return;
+                }
+                addressStr = `${street}, nº ${number} - Bairro: ${neighborhoodName}`;
+                if (complement) addressStr += ` | Compl.: ${complement}`;
+                if (reference) addressStr += ` | Ref.: ${reference}`;
+                currentFee = getSelectedDeliveryFee();
+            } else {
+                addressStr = 'Retirada no Balcão';
+            }
+
+            const typedCoupon = normalizeCouponCode(document.getElementById('coupon-input')?.value);
+            if (typedCoupon && (!appliedCoupon || normalizeCouponCode(appliedCoupon.code) !== typedCoupon)) {
+                const found = couponsList.find(c => normalizeCouponCode(c.code) === typedCoupon);
+                if (found) {
+                    appliedCoupon = found;
+                } else {
+                    alert('O cupom informado não existe. Corrija ou apague o campo de cupom para continuar.');
+                    return;
+                }
+            }
+
+            const subtotal = cart.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
+            const discount = calculateDiscount(subtotal);
+            if (appliedCoupon && discount === 0 && Number(appliedCoupon.min_order) > 0) {
+                alert(`O cupom ${normalizeCouponCode(appliedCoupon.code)} exige pedido mínimo de R$ ${Number(appliedCoupon.min_order).toFixed(2).replace('.', ',')}.`);
+                return;
+            }
+
+            const total = Math.max(0, subtotal - discount) + currentFee;
+
+            let paymentDescription = paymentMethod;
+            if(paymentMethod === 'Cartão') {
+                paymentDescription = `Cartão (${cardSubtype})`;
+            } else if(paymentMethod === 'Dinheiro') {
+                const changeVal = document.getElementById('client-change').value.trim();
+                if(changeVal) paymentDescription += ` (Troco para: ${changeVal})`;
+            }
+            if (appliedCoupon && discount > 0) {
+                paymentDescription += ` | Cupom: ${normalizeCouponCode(appliedCoupon.code)}`;
+            }
+
+            let itemsTextSummary = "";
+            cart.forEach((item) => {
+                itemsTextSummary += `${item.quantity}x ${item.name}\n`;
+                if(item.addons.length > 0) itemsTextSummary += `  + Adicionais: ${item.addons.join(', ')}\n`;
+                if(item.observation) itemsTextSummary += `  + Obs: ${item.observation}\n`;
+            });
+
+            const orderPayload = {
+                client_name: clientName,
+                client_phone: normalizePhone(clientPhone),
+                delivery_type: deliveryType === 'delivery' ? 'Delivery' : 'Retirada',
+                address: addressStr,
+                complement: complement,
+                reference: reference,
+                payment: paymentDescription,
+                items: itemsTextSummary.trim(),
+                total: total
+            };
+
+            const checkoutBtn = document.getElementById('btn-checkout-whatsapp');
+            const checkoutText = document.getElementById('btn-checkout-text');
+            checkoutBtn.disabled = true;
+            checkoutText.innerText = 'Enviando pedido...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderPayload)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    const detailMsg = Array.isArray(errData.detail)
+                        ? errData.detail.map(d => d.msg).join(' | ')
+                        : (errData.detail || `Erro HTTP ${res.status}`);
+                    alert(`O servidor recusou o pedido: ${detailMsg}`);
+                    return;
+                }
+
+                const savedOrder = await res.json();
+                saveOrderToCustomerHistory({ ...orderPayload, id: savedOrder.id });
+
+                cart = [];
+                resetCheckoutFieldsAfterOrder();
+                updateCartUI();
+                closeCartModal();
+                alert(`Pedido #${savedOrder.id} finalizado com sucesso!`);
+            } catch (err) {
+                console.error("Erro ao salvar pedido no servidor:", err);
+                alert("Não foi possível enviar o pedido para o servidor. Verifique se o sistema está aberto em http://127.0.0.1:8000 e tente novamente.");
+            } finally {
+                if (storeSettings.is_open) {
+                    checkoutBtn.disabled = false;
+                    checkoutText.innerText = 'Finalizar Pedido';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
